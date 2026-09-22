@@ -162,7 +162,7 @@ function openSettingsWindow() {
   if (settingsWin) { settingsWin.show(); settingsWin.focus(); return; }
   settingsWin = new BrowserWindow({
     width: 420,
-    height: settings.getSettings().llmPolishEnabled ? 840 : 740,
+    height: settings.getSettings().llmPolishEnabled ? 910 : 810,
     resizable: false,
     title: `${APP_NAME} — Einstellungen`,
     icon: path.join(__dirname, 'icon.png'),
@@ -202,7 +202,7 @@ function toggleDictation() {
     setStatus('recording');
     lockMode = false;
     recordingStartedAt = Date.now();
-    recorderWin.webContents.send('recorder:start', { silenceMs: settings.getSettings().silenceMs });
+    recorderWin.webContents.send('recorder:start', { silenceMs: settings.getSettings().silenceMs, maxRecordMs: settings.getSettings().maxRecordMs });
   }
   // während transcribing/polishing ignorieren
 }
@@ -262,13 +262,14 @@ ipcMain.handle('settings:load', () => {
     hasLlmApiKey: s.hasLlmApiKey,
     llmPolishEnabled: s.llmPolishEnabled,
     silenceMs: s.silenceMs,
+    maxRecordMs: s.maxRecordMs,
     hotkey: s.hotkey,
     showWidget: s.showWidget,
     glossary: s.glossary,
   };
 });
 
-ipcMain.handle('settings:save', (_e, { elevenLabsKey, llmPolishEnabled, llmApiKey, silenceMs, hotkey, showWidget, glossary }) => {
+ipcMain.handle('settings:save', (_e, { elevenLabsKey, llmPolishEnabled, llmApiKey, silenceMs, hotkey, showWidget, glossary, maxRecordMs }) => {
   const current = settings.getSettings();
   if (!elevenLabsKey && !current.hasElevenLabsKey) {
     return { ok: false, error: 'ElevenLabs-Key wird benötigt.' };
@@ -293,7 +294,7 @@ ipcMain.handle('settings:save', (_e, { elevenLabsKey, llmPolishEnabled, llmApiKe
     }
   }
 
-  settings.saveSettings({ elevenLabsKey, llmPolishEnabled, llmApiKey, silenceMs, hotkey: hotkeyToSave, showWidget, glossary });
+  settings.saveSettings({ elevenLabsKey, llmPolishEnabled, llmApiKey, silenceMs, hotkey: hotkeyToSave, showWidget, glossary, maxRecordMs });
   if (showWidget === false && widgetWin) { widgetWin.close(); }
   else if (showWidget !== false && !widgetWin) { createWidgetWindow(); widgetWin.webContents.once('did-finish-load', () => notifyWidget()); }
   updateTray();

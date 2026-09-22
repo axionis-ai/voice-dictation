@@ -197,6 +197,15 @@
   </div>
 
   <div class="section">
+    <div class="slider-row">
+      <label for="maxRecordMin" style="margin-bottom:0">Maximale Aufnahmedauer</label>
+      <span class="slider-value" id="maxRecordMinValue">30 min</span>
+    </div>
+    <p class="hint">Sicherheitsgrenze — die Aufnahme stoppt spätestens nach dieser Zeit, unabhängig von Pausen. Für lange Diktate hochsetzen.</p>
+    <input type="range" id="maxRecordMin" min="1" max="120" step="1" value="30">
+  </div>
+
+  <div class="section">
     <label>Hotkey</label>
     <p class="hint">Aufnahme starten/stoppen. Muss mindestens eine Zusatztaste (Strg/Alt/Umschalt/Win) enthalten.</p>
     <div class="hotkey-row">

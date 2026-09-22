@@ -10,6 +10,8 @@ const llmApiKeyEl = document.getElementById('llmApiKey');
 const statusEl = document.getElementById('status');
 const silenceMsEl = document.getElementById('silenceMs');
 const silenceMsValueEl = document.getElementById('silenceMsValue');
+const maxRecordMinEl = document.getElementById('maxRecordMin');
+const maxRecordMinValueEl = document.getElementById('maxRecordMinValue');
 const hotkeyBoxEl = document.getElementById('hotkeyBox');
 const hotkeyChangeBtnEl = document.getElementById('hotkeyChangeBtn');
 const showWidgetEl = document.getElementById('showWidget');
@@ -20,6 +22,9 @@ let pendingHotkey = null;      // != null, sobald in dieser Sitzung eine neue Ko
 
 silenceMsEl.addEventListener('input', () => {
   silenceMsValueEl.textContent = `${parseFloat(silenceMsEl.value).toFixed(1)} s`;
+});
+maxRecordMinEl.addEventListener('input', () => {
+  maxRecordMinValueEl.textContent = `${maxRecordMinEl.value} min`;
 });
 
 // Accelerator (Electron-Format, z.B. "Control+Alt+Y") <-> Anzeige ("Strg + Alt + Y").
@@ -119,6 +124,10 @@ ipcRenderer.invoke('settings:load').then((s) => {
   silenceMsEl.value = seconds;
   silenceMsValueEl.textContent = `${seconds} s`;
 
+  const maxMin = Math.round(s.maxRecordMs / 60000);
+  maxRecordMinEl.value = maxMin;
+  maxRecordMinValueEl.textContent = `${maxMin} min`;
+
   currentHotkey = s.hotkey;
   renderHotkey(currentHotkey);
 
@@ -135,11 +144,12 @@ document.getElementById('saveBtn').addEventListener('click', async () => {
   const llmPolishEnabled = polishEnabledEl.checked;
   const llmApiKey = llmApiKeyEl.value.trim();
   const silenceMs = Math.round(parseFloat(silenceMsEl.value) * 1000);
+  const maxRecordMs = Math.round(parseFloat(maxRecordMinEl.value) * 60000);
   const hotkey = pendingHotkey || currentHotkey;
   const showWidget = showWidgetEl.checked;
   const glossary = glossaryEl.value.split(',').map((s) => s.trim()).filter(Boolean);
 
-  const result = await ipcRenderer.invoke('settings:save', { elevenLabsKey, llmPolishEnabled, llmApiKey, silenceMs, hotkey, showWidget, glossary });
+  const result = await ipcRenderer.invoke('settings:save', { elevenLabsKey, llmPolishEnabled, llmApiKey, silenceMs, hotkey, showWidget, glossary, maxRecordMs });
   if (!result.ok) {
     statusEl.textContent = result.error || 'ElevenLabs-Key wird benötigt.';
     statusEl.style.color = '#ff8a8a';

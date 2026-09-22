@@ -11,6 +11,7 @@ const DEFAULT_LLM_BASE_URL = 'https://api.groq.com/openai/v1';
 const DEFAULT_LLM_MODEL = 'openai/gpt-oss-20b';
 const DEFAULT_SILENCE_MS = 1800;
 const DEFAULT_HOTKEY = 'Super+Y';
+const DEFAULT_MAX_RECORD_MS = 30 * 60 * 1000; // 30 Minuten
 
 function configPath() {
   return path.join(app.getPath('userData'), 'config.json');
@@ -64,13 +65,14 @@ function getSettings() {
     hotkey: raw.hotkey || DEFAULT_HOTKEY,
     showWidget: raw.showWidget !== false, // Default an
     glossary: Array.isArray(raw.glossary) ? raw.glossary : [],
+    maxRecordMs: Number.isFinite(raw.maxRecordMs) ? raw.maxRecordMs : DEFAULT_MAX_RECORD_MS,
   };
 }
 
 // Nur uebergebene Felder werden geaendert; leere/undefined Secret-Felder lassen den
 // bisherigen gespeicherten Wert unangetastet (Maske zeigt Secrets nie im Klartext an,
 // ein leeres Feld beim Speichern heisst also "unveraendert lassen", nicht "loeschen").
-function saveSettings({ elevenLabsKey, llmPolishEnabled, llmApiKey, silenceMs, hotkey, showWidget, glossary } = {}) {
+function saveSettings({ elevenLabsKey, llmPolishEnabled, llmApiKey, silenceMs, hotkey, showWidget, glossary, maxRecordMs } = {}) {
   const raw = readRaw();
   if (elevenLabsKey) raw.elevenLabsKey = encrypt(elevenLabsKey);
   if (llmApiKey) raw.llmApiKey = encrypt(llmApiKey);
@@ -79,8 +81,9 @@ function saveSettings({ elevenLabsKey, llmPolishEnabled, llmApiKey, silenceMs, h
   if (hotkey) raw.hotkey = hotkey;
   if (showWidget !== undefined) raw.showWidget = !!showWidget;
   if (Array.isArray(glossary)) raw.glossary = glossary;
+  if (Number.isFinite(maxRecordMs)) raw.maxRecordMs = maxRecordMs;
   writeRaw(raw);
   return getSettings();
 }
 
-module.exports = { getSettings, saveSettings, DEFAULT_LLM_BASE_URL, DEFAULT_LLM_MODEL, DEFAULT_SILENCE_MS, DEFAULT_HOTKEY };
+module.exports = { getSettings, saveSettings, DEFAULT_LLM_BASE_URL, DEFAULT_LLM_MODEL, DEFAULT_SILENCE_MS, DEFAULT_HOTKEY, DEFAULT_MAX_RECORD_MS };

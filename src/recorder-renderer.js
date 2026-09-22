@@ -10,12 +10,11 @@ const { ipcRenderer } = require('electron');
 
 // --- VAD/Beep Konfiguration ---
 let silenceMs = 1800;             // Ruhe nach Sprache -> Auto-Stop (vom Main-Prozess pro Start gesetzt, aus den Einstellungen)
+let maxRecordMs = 30 * 60 * 1000; // Sicherheits-Hardstop, konfigurierbar (vom Main-Prozess pro Start gesetzt) — gilt auch im Lock-Modus
 const SPEECH_THRESHOLD = 8;       // max Abweichung von 128 (0-255 Skala) als "Sprache"
 const MIN_SPEECH_MS = 250;        // mind. so lange Sprache erkannt, bevor SILENCE scharf schaltet
-const MAX_RECORD_MS = 60000;      // Sicherheits-Hardstop
 const BEEP_START_FREQ = 880;      // hoher Ton = Aufnahme startet
 const BEEP_STOP_FREQ = 440;       // tiefer Ton = Aufnahme stoppt
-const LOCK_MAX_MS = 30 * 60 * 1000; // 30 min Sicherheits-Cap im Lock-Modus (Feststelltaste)
 
 let mediaStream = null;
 let mediaRecorder = null;
@@ -68,11 +67,11 @@ function startVAD() {
       }
       lastSpeechAt = Date.now();
     }
-    // Auto-Stop: im Lock-Modus (Feststelltaste) KEIN Silence-Stopp, nur langer Cap.
-    // Normal: nach Sprache + SILENCE_MS Ruhe, oder 60s-Hardstop.
+    // Auto-Stop: im Lock-Modus (Feststelltaste) KEIN Silence-Stopp, nur der Hardstop.
+    // Normal: nach Sprache + SILENCE_MS Ruhe, oder derselbe konfigurierbare Hardstop.
     if (lockMode) {
-      if (Date.now() - recordStart > LOCK_MAX_MS) stop();
-    } else if ((hasSpoken && Date.now() - lastSpeechAt > silenceMs) || Date.now() - recordStart > MAX_RECORD_MS) {
+      if (Date.now() - recordStart > maxRecordMs) stop();
+    } else if ((hasSpoken && Date.now() - lastSpeechAt > silenceMs) || Date.now() - recordStart > maxRecordMs) {
       stop(); // Auto-Stop
     }
   }, 100);
@@ -81,6 +80,7 @@ function startVAD() {
 async function start(opts = {}) {
   try {
     if (Number.isFinite(opts.silenceMs)) silenceMs = opts.silenceMs;
+    if (Number.isFinite(opts.maxRecordMs)) maxRecordMs = opts.maxRecordMs;
     if (mediaRecorder && mediaRecorder.state === 'recording') return;
     beep(BEEP_START_FREQ, 140); // Start-Feedback VOR Aufnahme (nicht aufs Band)
     mediaStream = await navigator.mediaDevices.getUserMedia({
