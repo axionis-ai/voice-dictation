@@ -81,6 +81,7 @@ npm run dist       # builds dist/Axionis Voice Setup *.exe
 - [CHANGELOG.md](CHANGELOG.md) — version history
 - [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — technical design, decisions
 - [docs/LESSONS-LEARNED.md](docs/LESSONS-LEARNED.md) — debugging insights from development
+- [docs/ROADMAP.md](docs/ROADMAP.md) — ideas for further development
 
 ## License
 
