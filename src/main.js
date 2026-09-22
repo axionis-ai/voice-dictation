@@ -132,7 +132,7 @@ function createRecorderWindow() {
 // das Tool aktiv/am Aufnehmen ist, Klick oeffnet die Einstellungen als zweiter Weg
 // neben dem Tray-Menue.
 function createWidgetWindow() {
-  const WIN_W = 140, WIN_H = 60, MARGIN = 12;
+  const WIN_W = 190, WIN_H = 130, MARGIN = 12; // Hoehe/Breite geben Platz fuer den Hover-Tooltip oberhalb der Pille
   const workArea = screen.getPrimaryDisplay().workArea;
   widgetWin = new BrowserWindow({
     width: WIN_W,
@@ -160,7 +160,7 @@ function openSettingsWindow() {
   if (settingsWin) { settingsWin.show(); settingsWin.focus(); return; }
   settingsWin = new BrowserWindow({
     width: 420,
-    height: settings.getSettings().llmPolishEnabled ? 700 : 600,
+    height: settings.getSettings().llmPolishEnabled ? 760 : 660,
     resizable: false,
     title: `${APP_NAME} — Einstellungen`,
     icon: path.join(__dirname, 'icon.png'),
@@ -261,10 +261,11 @@ ipcMain.handle('settings:load', () => {
     llmPolishEnabled: s.llmPolishEnabled,
     silenceMs: s.silenceMs,
     hotkey: s.hotkey,
+    showWidget: s.showWidget,
   };
 });
 
-ipcMain.handle('settings:save', (_e, { elevenLabsKey, llmPolishEnabled, llmApiKey, silenceMs, hotkey }) => {
+ipcMain.handle('settings:save', (_e, { elevenLabsKey, llmPolishEnabled, llmApiKey, silenceMs, hotkey, showWidget }) => {
   const current = settings.getSettings();
   if (!elevenLabsKey && !current.hasElevenLabsKey) {
     return { ok: false, error: 'ElevenLabs-Key wird benötigt.' };
@@ -289,7 +290,9 @@ ipcMain.handle('settings:save', (_e, { elevenLabsKey, llmPolishEnabled, llmApiKe
     }
   }
 
-  settings.saveSettings({ elevenLabsKey, llmPolishEnabled, llmApiKey, silenceMs, hotkey: hotkeyToSave });
+  settings.saveSettings({ elevenLabsKey, llmPolishEnabled, llmApiKey, silenceMs, hotkey: hotkeyToSave, showWidget });
+  if (showWidget === false && widgetWin) { widgetWin.close(); }
+  else if (showWidget !== false && !widgetWin) { createWidgetWindow(); widgetWin.webContents.once('did-finish-load', () => notifyWidget()); }
   updateTray();
   notifyWidget();
   if (hotkeyError) return { ok: false, error: `Restliche Einstellungen gespeichert, aber ${hotkeyError}` };
@@ -327,9 +330,11 @@ if (!gotTheLock) {
     // Recorder window (hidden)
     createRecorderWindow();
 
-    // Status-Icon unten rechts (immer sichtbar)
-    createWidgetWindow();
-    widgetWin.webContents.once('did-finish-load', () => notifyWidget());
+    // Status-Icon unten rechts (per Einstellung abschaltbar)
+    if (settings.getSettings().showWidget) {
+      createWidgetWindow();
+      widgetWin.webContents.once('did-finish-load', () => notifyWidget());
+    }
 
     // Global Hotkey
     registerHotkey();

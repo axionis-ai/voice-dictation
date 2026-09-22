@@ -4,6 +4,15 @@
 const { ipcRenderer } = require('electron');
 
 const STATE_CLASSES = ['state-idle', 'state-needs-setup', 'state-recording', 'state-processing', 'state-error'];
+const tipStatusEl = document.getElementById('tipStatus');
+
+const TIP_TEXT = {
+  'state-idle': 'Bereit — Klick für Einstellungen',
+  'state-needs-setup': 'Einrichtung nötig — Klick zum Start',
+  'state-recording': 'Nimmt gerade auf …',
+  'state-processing': 'Verarbeite Diktat …',
+  'state-error': 'Fehler — Klick für Einstellungen',
+};
 
 function applyState({ state, hasElevenLabsKey }) {
   let cls = 'state-idle';
@@ -13,6 +22,7 @@ function applyState({ state, hasElevenLabsKey }) {
   else if (state === 'error') cls = 'state-error';
   document.body.classList.remove(...STATE_CLASSES);
   document.body.classList.add(cls);
+  tipStatusEl.textContent = TIP_TEXT[cls];
 }
 
 ipcRenderer.on('widget:state', (_e, payload) => applyState(payload));

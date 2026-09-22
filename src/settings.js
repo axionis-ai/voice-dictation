@@ -62,19 +62,21 @@ function getSettings() {
     llmModel: raw.llmModel || DEFAULT_LLM_MODEL,
     silenceMs: Number.isFinite(raw.silenceMs) ? raw.silenceMs : DEFAULT_SILENCE_MS,
     hotkey: raw.hotkey || DEFAULT_HOTKEY,
+    showWidget: raw.showWidget !== false, // Default an
   };
 }
 
 // Nur uebergebene Felder werden geaendert; leere/undefined Secret-Felder lassen den
 // bisherigen gespeicherten Wert unangetastet (Maske zeigt Secrets nie im Klartext an,
 // ein leeres Feld beim Speichern heisst also "unveraendert lassen", nicht "loeschen").
-function saveSettings({ elevenLabsKey, llmPolishEnabled, llmApiKey, silenceMs, hotkey } = {}) {
+function saveSettings({ elevenLabsKey, llmPolishEnabled, llmApiKey, silenceMs, hotkey, showWidget } = {}) {
   const raw = readRaw();
   if (elevenLabsKey) raw.elevenLabsKey = encrypt(elevenLabsKey);
   if (llmApiKey) raw.llmApiKey = encrypt(llmApiKey);
   if (llmPolishEnabled !== undefined) raw.llmPolishEnabled = !!llmPolishEnabled;
   if (Number.isFinite(silenceMs)) raw.silenceMs = silenceMs;
   if (hotkey) raw.hotkey = hotkey;
+  if (showWidget !== undefined) raw.showWidget = !!showWidget;
   writeRaw(raw);
   return getSettings();
 }

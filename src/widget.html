@@ -11,8 +11,10 @@
     --ember: #FF5A36;
     --ember-2: #ff7a52;
     --ember-glow: rgba(255,90,54,0.55);
-    --ember-line: rgba(255,90,54,0.40);
+    --ember-line: rgba(255,90,54,0.45);
     --bone: #F1ECE3;
+    --bone-dim: #cfc8bd;
+    --ash: #8A8178;
   }
   html, body {
     margin: 0;
@@ -27,7 +29,50 @@
     display: flex;
     align-items: flex-end;
     justify-content: flex-end;
+    opacity: 0;
+    animation: widget-in .28s cubic-bezier(.16,1,.3,1) forwards;
   }
+  @keyframes widget-in { from { opacity: 0; transform: scale(.82); } to { opacity: 1; transform: scale(1); } }
+
+  .widget { position: relative; display: flex; align-items: flex-end; justify-content: flex-end; }
+
+  /* Hover-Tooltip: benennt das Icon + zeigt Live-Status */
+  .tip {
+    position: absolute;
+    right: 0;
+    bottom: calc(100% + 10px);
+    min-width: 168px;
+    background: linear-gradient(160deg, var(--coal-2), var(--obsidian));
+    border: 1px solid rgba(241,236,227,0.10);
+    border-radius: 10px;
+    padding: 9px 13px;
+    box-shadow: 0 14px 32px rgba(0,0,0,0.5);
+    opacity: 0;
+    transform: translateY(4px);
+    pointer-events: none;
+    transition: opacity .15s ease, transform .15s ease;
+    white-space: nowrap;
+  }
+  .widget:hover .tip { opacity: 1; transform: translateY(0); }
+  .tip strong {
+    display: block;
+    font-family: 'Segoe UI Semibold', 'Segoe UI', sans-serif;
+    font-weight: 700;
+    font-size: 11.5px;
+    letter-spacing: 0.06em;
+    color: var(--ember-2);
+    margin-bottom: 2px;
+  }
+  .tip span { display: block; font-size: 11.5px; color: var(--bone-dim); }
+  .tip::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    right: 18px;
+    border: 6px solid transparent;
+    border-top-color: var(--obsidian);
+  }
+
   .pill {
     display: flex;
     align-items: center;
@@ -38,19 +83,20 @@
     border-radius: 22px;
     background: linear-gradient(160deg, var(--coal-2), var(--obsidian));
     border: 1px solid rgba(241,236,227,0.10);
-    box-shadow: 0 8px 24px rgba(0,0,0,0.45);
+    box-shadow: 0 10px 26px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05);
     cursor: pointer;
-    transition: width .22s ease, border-color .18s, box-shadow .18s, transform .12s;
+    transition: width .22s cubic-bezier(.16,1,.3,1), border-color .18s, box-shadow .18s, transform .15s;
     box-sizing: border-box;
     overflow: hidden;
     justify-content: center;
   }
   .pill:hover {
-    transform: scale(1.06);
+    transform: scale(1.07);
     border-color: var(--ember-line);
+    box-shadow: 0 14px 32px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.06);
   }
   .bolt { width: 18px; height: 18px; flex: none; }
-  .bolt path { fill: var(--ember); transition: fill .2s; }
+  .bolt path { fill: var(--ember); transition: fill .2s, filter .2s; }
 
   /* Ruhezustand: dezenter Bolt */
   body.state-idle .bolt path { fill: #6b6f7a; }
@@ -58,13 +104,14 @@
   /* Nicht eingerichtet: pulsierender Ring, ladet zum Klicken ein */
   body.state-needs-setup .pill { animation: needs-setup-pulse 1.8s ease-out infinite; }
   @keyframes needs-setup-pulse {
-    0% { box-shadow: 0 8px 24px rgba(0,0,0,0.45), 0 0 0 0 var(--ember-glow); }
-    70% { box-shadow: 0 8px 24px rgba(0,0,0,0.45), 0 0 0 9px rgba(255,90,54,0); }
-    100% { box-shadow: 0 8px 24px rgba(0,0,0,0.45), 0 0 0 0 rgba(255,90,54,0); }
+    0% { box-shadow: 0 10px 26px rgba(0,0,0,0.5), 0 0 0 0 var(--ember-glow); }
+    70% { box-shadow: 0 10px 26px rgba(0,0,0,0.5), 0 0 0 10px rgba(255,90,54,0); }
+    100% { box-shadow: 0 10px 26px rgba(0,0,0,0.5), 0 0 0 0 rgba(255,90,54,0); }
   }
 
-  /* Aufnahme: Pille wird breiter, Wave-Balken erscheinen */
+  /* Aufnahme: Pille wird breiter, Wave-Balken erscheinen, Bolt leuchtet */
   body.state-recording .pill { width: 108px; justify-content: flex-start; border-color: var(--ember-line); }
+  body.state-recording .bolt path { filter: drop-shadow(0 0 5px var(--ember-glow)); }
   .wave { display: none; align-items: flex-end; gap: 3px; height: 18px; }
   body.state-recording .wave { display: flex; }
   .wave span { display: block; width: 3px; border-radius: 2px; background: linear-gradient(180deg, var(--ember-2), var(--ember)); transform-origin: bottom; animation: wave 1.0s ease-in-out infinite; }
@@ -78,6 +125,7 @@
   /* Verarbeitung (Transkription/Politur): rotierender Ring um den Bolt */
   .spinner { display: none; width: 26px; height: 26px; border-radius: 50%; border: 2px solid rgba(255,90,54,0.18); border-top-color: var(--ember); position: absolute; animation: spin 0.9s linear infinite; }
   body.state-processing .pill { position: relative; }
+  body.state-processing .bolt path { filter: drop-shadow(0 0 4px var(--ember-glow)); }
   body.state-processing .spinner { display: block; }
   @keyframes spin { to { transform: rotate(360deg); } }
 
@@ -86,10 +134,16 @@
 </style>
 </head>
 <body class="state-idle">
-  <div class="pill" id="pill" title="Axionis Voice">
-    <span class="spinner" aria-hidden="true"></span>
-    <svg class="bolt" viewBox="0 0 24 24" aria-hidden="true"><path d="M14.615 1.595a.75.75 0 0 1 .359.852L12.982 9.75h7.268a.75.75 0 0 1 .548 1.262l-10.5 11.25a.75.75 0 0 1-1.272-.71l1.992-7.302H3.75a.75.75 0 0 1-.548-1.262l10.5-11.25a.75.75 0 0 1 .913-.143Z"/></svg>
-    <span class="wave" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span></span>
+  <div class="widget">
+    <div class="tip" id="tip">
+      <strong>AXIONIS VOICE</strong>
+      <span id="tipStatus">Bereit — Klick für Einstellungen</span>
+    </div>
+    <div class="pill" id="pill">
+      <span class="spinner" aria-hidden="true"></span>
+      <svg class="bolt" viewBox="0 0 24 24" aria-hidden="true"><path d="M14.615 1.595a.75.75 0 0 1 .359.852L12.982 9.75h7.268a.75.75 0 0 1 .548 1.262l-10.5 11.25a.75.75 0 0 1-1.272-.71l1.992-7.302H3.75a.75.75 0 0 1-.548-1.262l10.5-11.25a.75.75 0 0 1 .913-.143Z"/></svg>
+      <span class="wave" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span></span>
+    </div>
   </div>
   <script src="widget-renderer.js"></script>
 </body>
