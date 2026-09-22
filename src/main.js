@@ -131,7 +131,7 @@ function createRecorderWindow() {
 // Immer sichtbares Status-Icon unten rechts (ueber der Taskleiste) — zeigt live, ob
 // das Tool aktiv/am Aufnehmen ist, Klick oeffnet die Einstellungen als zweiter Weg
 // neben dem Tray-Menue.
-const WIDGET_W = 190, WIDGET_H = 130, WIDGET_MARGIN = 12;
+const WIDGET_W = 120, WIDGET_H = 76, WIDGET_MARGIN = 12;
 
 // Liefert eine sinnvolle Fensterposition: gespeicherte Position, falls vorhanden UND
 // noch auf einem angeschlossenen Bildschirm sichtbar — sonst unten rechts (Standard).
@@ -347,6 +347,19 @@ ipcMain.on('settings:close', () => {
 });
 
 ipcMain.on('widget:open-settings', () => openSettingsWindow());
+
+// Manuelles Ziehen (statt -webkit-app-region:drag, das auf demselben Element auch
+// normale Klicks mitgeschluckt hat): Renderer fragt die Startposition ab, berechnet
+// den Versatz selbst per Mausbewegung und schickt die Zielposition.
+ipcMain.handle('widget:get-position', () => {
+  if (!widgetWin) return { x: 0, y: 0 };
+  const [x, y] = widgetWin.getPosition();
+  return { x, y };
+});
+
+ipcMain.on('widget:drag-to', (_e, { x, y }) => {
+  if (widgetWin) widgetWin.setPosition(Math.round(x), Math.round(y));
+});
 
 ipcMain.handle('widget:reset-position', () => {
   settings.saveSettings({ widgetX: null, widgetY: null });

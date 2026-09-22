@@ -27,6 +27,42 @@ function applyState({ state, hasElevenLabsKey }) {
 
 ipcRenderer.on('widget:state', (_e, payload) => applyState(payload));
 
-pillEl.addEventListener('click', () => {
-  ipcRenderer.send('widget:open-settings');
+// Ziehen selbst gebaut statt -webkit-app-region:drag: die native Drag-Region
+// verschluckt auf diesem Element auch normale click-Events komplett (verifiziert —
+// deshalb ging "Einstellungen oeffnen" nach dem ersten Drag-Versuch nicht mehr).
+// Bewegung < DRAG_THRESHOLD beim Loslassen = Klick -> Einstellungen; sonst war es
+// ein Ziehen, dann passiert beim Loslassen nichts weiter (Position ist schon gesetzt).
+const DRAG_THRESHOLD = 4;
+let dragging = false;
+let dragStarted = false;
+let startScreenX = 0, startScreenY = 0;
+let winStartX = 0, winStartY = 0;
+
+pillEl.addEventListener('mousedown', async (e) => {
+  if (e.button !== 0) return;
+  dragging = true;
+  dragStarted = false;
+  startScreenX = e.screenX;
+  startScreenY = e.screenY;
+  const pos = await ipcRenderer.invoke('widget:get-position');
+  winStartX = pos.x;
+  winStartY = pos.y;
+});
+
+window.addEventListener('mousemove', (e) => {
+  if (!dragging) return;
+  const dx = e.screenX - startScreenX;
+  const dy = e.screenY - startScreenY;
+  if (!dragStarted && Math.hypot(dx, dy) > DRAG_THRESHOLD) dragStarted = true;
+  if (dragStarted) {
+    ipcRenderer.send('widget:drag-to', { x: winStartX + dx, y: winStartY + dy });
+  }
+});
+
+window.addEventListener('mouseup', () => {
+  if (dragging && !dragStarted) {
+    ipcRenderer.send('widget:open-settings');
+  }
+  dragging = false;
+  dragStarted = false;
 });
