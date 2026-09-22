@@ -20,9 +20,12 @@ Das Tool nutzt [ElevenLabs Scribe](https://elevenlabs.io) für die Spracherkennu
 
 Optional: **KI-Politur** verbessert Grammatik/Zeichensetzung automatisch, dafür einen kostenlosen [Groq](https://console.groq.com/keys)-Key eintragen. Deine Keys werden ausschließlich lokal und verschlüsselt (Windows-eigene Verschlüsselung, an dein Nutzerkonto gebunden) auf deinem Rechner gespeichert — sie verlassen dein Gerät nie außer direkt an ElevenLabs/Groq.
 
-Einstellungen jederzeit über das Tray-Icon → **Einstellungen...** änderbar — dort auch einstellbar:
+Einstellungen jederzeit über das Tray-Icon oder das Status-Icon unten rechts → **Einstellungen...** änderbar — dort auch einstellbar:
 - **Pause bis Auto-Stopp:** wie lange Denkpausen beim Diktieren sein dürfen, bevor die Aufnahme automatisch stoppt (1–30 Sekunden).
+- **Maximale Aufnahmedauer:** Sicherheitsgrenze für die gesamte Aufnahme (1–120 Minuten, Standard 30 min).
 - **Hotkey:** eigene Tastenkombination statt `Win+Y` festlegen.
+- **Glossar:** Eigennamen/Fachbegriffe, die sonst falsch geschrieben werden (z. B. Produktnamen), kommagetrennt eintragen.
+- **Status-Icon:** das kleine, frei verschiebbare Symbol unten rechts, das den Aufnahme-Status live zeigt — bei Bedarf abschaltbar.
 
 ## Benutzung
 
@@ -61,6 +64,12 @@ npm install
 npm start          # Entwicklungsmodus
 npm run dist       # baut dist/Axionis Voice Setup *.exe
 ```
+
+## Mehr Doku
+
+- [CHANGELOG.md](CHANGELOG.md) — Versionsverlauf
+- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — technischer Aufbau, Entscheidungen
+- [docs/LESSONS-LEARNED.md](docs/LESSONS-LEARNED.md) — Debugging-Erkenntnisse aus der Entwicklung
 
 ## Lizenz
 
