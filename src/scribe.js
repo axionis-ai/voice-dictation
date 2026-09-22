@@ -10,18 +10,26 @@ const MODEL_ID = 'scribe_v1';
 const LANGUAGE_CODE = 'de'; // primär Deutsch; Scribe auto-detectet sonst
 
 function buildMultipart(fields, file) {
-  // fields: { model_id, language_code } ; file: { name, mime, buffer }
+  // fields: { model_id, language_code, keyterms: [...] } ; file: { name, mime, buffer }
+  // Werte, die ein Array sind, werden als mehrere Form-Data-Teile mit demselben
+  // Feldnamen gesendet (so erwartet es ElevenLabs' "keyterms" — am echten Endpunkt
+  // verifiziert: ein JSON-String in einem Feld wird als ein einzelner, zu langer
+  // Keyterm abgelehnt ("invalid characters" wegen der eckigen Klammern).
   const boundary = '----freeflowlevion' + Math.random().toString(16).slice(2) + Date.now().toString(16);
   const parts = [];
   const enc = (s) => Buffer.from(s, 'utf8');
 
   for (const [name, value] of Object.entries(fields)) {
     if (value === undefined || value === null) continue;
-    parts.push(enc(
-      `--${boundary}\r\n` +
-      `Content-Disposition: form-data; name="${name}"\r\n\r\n` +
-      `${value}\r\n`
-    ));
+    const values = Array.isArray(value) ? value : [value];
+    for (const v of values) {
+      if (v === undefined || v === null || v === '') continue;
+      parts.push(enc(
+        `--${boundary}\r\n` +
+        `Content-Disposition: form-data; name="${name}"\r\n\r\n` +
+        `${v}\r\n`
+      ));
+    }
   }
   // File-Part
   parts.push(enc(
@@ -35,12 +43,20 @@ function buildMultipart(fields, file) {
   return { body: Buffer.concat(parts), contentType: `multipart/form-data; boundary=${boundary}` };
 }
 
+// ElevenLabs lehnt Keyterms mit < > { } [ ] \ ab und begrenzt auf 50 Zeichen/5 Woerter —
+// lieber leise kuerzen als die ganze Transkription an einem falsch eingegebenen Glossar-
+// Begriff scheitern zu lassen.
+function sanitizeKeyterm(term) {
+  return term.replace(/[<>{}[\]\\]/g, '').trim().slice(0, 50);
+}
+
 async function transcribe(audioBuffer, { ext = 'webm', mime = 'audio/webm', languageCode = LANGUAGE_CODE } = {}) {
   const key = getSettings().elevenLabsKey;
   if (!key) throw new Error('ElevenLabs-Key fehlt — in den Einstellungen eintragen');
+  const glossary = (getSettings().glossary || []).map(sanitizeKeyterm).filter(Boolean);
 
   const { body, contentType } = buildMultipart(
-    { model_id: MODEL_ID, language_code: languageCode },
+    { model_id: MODEL_ID, language_code: languageCode, keyterms: glossary.length ? glossary : undefined },
     { name: `dict.${ext}`, mime, buffer: audioBuffer }
   );
 

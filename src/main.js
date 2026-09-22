@@ -162,7 +162,7 @@ function openSettingsWindow() {
   if (settingsWin) { settingsWin.show(); settingsWin.focus(); return; }
   settingsWin = new BrowserWindow({
     width: 420,
-    height: settings.getSettings().llmPolishEnabled ? 760 : 660,
+    height: settings.getSettings().llmPolishEnabled ? 840 : 740,
     resizable: false,
     title: `${APP_NAME} — Einstellungen`,
     icon: path.join(__dirname, 'icon.png'),
@@ -264,10 +264,11 @@ ipcMain.handle('settings:load', () => {
     silenceMs: s.silenceMs,
     hotkey: s.hotkey,
     showWidget: s.showWidget,
+    glossary: s.glossary,
   };
 });
 
-ipcMain.handle('settings:save', (_e, { elevenLabsKey, llmPolishEnabled, llmApiKey, silenceMs, hotkey, showWidget }) => {
+ipcMain.handle('settings:save', (_e, { elevenLabsKey, llmPolishEnabled, llmApiKey, silenceMs, hotkey, showWidget, glossary }) => {
   const current = settings.getSettings();
   if (!elevenLabsKey && !current.hasElevenLabsKey) {
     return { ok: false, error: 'ElevenLabs-Key wird benötigt.' };
@@ -292,7 +293,7 @@ ipcMain.handle('settings:save', (_e, { elevenLabsKey, llmPolishEnabled, llmApiKe
     }
   }
 
-  settings.saveSettings({ elevenLabsKey, llmPolishEnabled, llmApiKey, silenceMs, hotkey: hotkeyToSave, showWidget });
+  settings.saveSettings({ elevenLabsKey, llmPolishEnabled, llmApiKey, silenceMs, hotkey: hotkeyToSave, showWidget, glossary });
   if (showWidget === false && widgetWin) { widgetWin.close(); }
   else if (showWidget !== false && !widgetWin) { createWidgetWindow(); widgetWin.webContents.once('did-finish-load', () => notifyWidget()); }
   updateTray();

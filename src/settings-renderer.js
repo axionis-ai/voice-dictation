@@ -13,6 +13,7 @@ const silenceMsValueEl = document.getElementById('silenceMsValue');
 const hotkeyBoxEl = document.getElementById('hotkeyBox');
 const hotkeyChangeBtnEl = document.getElementById('hotkeyChangeBtn');
 const showWidgetEl = document.getElementById('showWidget');
+const glossaryEl = document.getElementById('glossary');
 
 let currentHotkey = 'Super+Y'; // vom Main-Prozess geladener/zuletzt gezeigter Accelerator (Fallback bei Esc)
 let pendingHotkey = null;      // != null, sobald in dieser Sitzung eine neue Kombination erfasst wurde
@@ -122,6 +123,7 @@ ipcRenderer.invoke('settings:load').then((s) => {
   renderHotkey(currentHotkey);
 
   showWidgetEl.checked = s.showWidget !== false;
+  glossaryEl.value = (s.glossary || []).join(', ');
 });
 
 document.getElementById('closeBtn').addEventListener('click', () => {
@@ -135,8 +137,9 @@ document.getElementById('saveBtn').addEventListener('click', async () => {
   const silenceMs = Math.round(parseFloat(silenceMsEl.value) * 1000);
   const hotkey = pendingHotkey || currentHotkey;
   const showWidget = showWidgetEl.checked;
+  const glossary = glossaryEl.value.split(',').map((s) => s.trim()).filter(Boolean);
 
-  const result = await ipcRenderer.invoke('settings:save', { elevenLabsKey, llmPolishEnabled, llmApiKey, silenceMs, hotkey, showWidget });
+  const result = await ipcRenderer.invoke('settings:save', { elevenLabsKey, llmPolishEnabled, llmApiKey, silenceMs, hotkey, showWidget, glossary });
   if (!result.ok) {
     statusEl.textContent = result.error || 'ElevenLabs-Key wird benötigt.';
     statusEl.style.color = '#ff8a8a';
