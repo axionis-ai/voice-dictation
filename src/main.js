@@ -4,7 +4,7 @@
 // - hidden BrowserWindow für Recorder (getUserMedia + MediaRecorder)
 // - IPC: recorder:recording -> scribe.transcribe -> inserter.insert
 // - Einstellungsfenster für ElevenLabs-/Groq-Key (ersetzt .env)
-const { app, BrowserWindow, Tray, Menu, globalShortcut, ipcMain, nativeImage } = require('electron');
+const { app, BrowserWindow, Tray, Menu, globalShortcut, ipcMain, nativeImage, screen } = require('electron');
 const path = require('path');
 const scribe = require('./scribe');
 const inserter = require('./inserter');
@@ -24,6 +24,7 @@ let registeredHotkey = null; // aktuell bei Electron registrierter Accelerator (
 let tray = null;
 let recorderWin = null;
 let settingsWin = null;
+let widgetWin = null;
 let state = 'idle'; // idle | recording | transcribing | error
 let lastError = '';
 const DOUBLE_TAP_MS = 500; // Doppelklick-Fenster für Feststelltaste (Lock-Modus)
@@ -34,6 +35,18 @@ function setStatus(next, err) {
   state = next;
   if (err) lastError = err;
   updateTray();
+  notifyWidget();
+}
+
+// Schickt den aktuellen Status ans immer sichtbare Status-Icon (unten rechts) —
+// separat von updateTray(), damit auch reine Lock-Mode-Wechsel (kein setStatus-Aufruf)
+// das Icon aktualisieren koennen.
+function notifyWidget() {
+  if (!widgetWin) return;
+  widgetWin.webContents.send('widget:state', {
+    state,
+    hasElevenLabsKey: settings.getSettings().hasElevenLabsKey,
+  });
 }
 
 function hotkeyLabel() {
@@ -115,6 +128,34 @@ function createRecorderWindow() {
   recorderWin.loadFile(path.join(__dirname, 'recorder.html'));
 }
 
+// Immer sichtbares Status-Icon unten rechts (ueber der Taskleiste) — zeigt live, ob
+// das Tool aktiv/am Aufnehmen ist, Klick oeffnet die Einstellungen als zweiter Weg
+// neben dem Tray-Menue.
+function createWidgetWindow() {
+  const WIN_W = 140, WIN_H = 60, MARGIN = 12;
+  const workArea = screen.getPrimaryDisplay().workArea;
+  widgetWin = new BrowserWindow({
+    width: WIN_W,
+    height: WIN_H,
+    x: workArea.x + workArea.width - WIN_W - MARGIN,
+    y: workArea.y + workArea.height - WIN_H - MARGIN,
+    frame: false,
+    transparent: true,
+    resizable: false,
+    movable: false,
+    alwaysOnTop: true,
+    skipTaskbar: true,
+    hasShadow: false,
+    webPreferences: {
+      nodeIntegration: true,
+      contextIsolation: false,
+    },
+  });
+  widgetWin.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+  widgetWin.loadFile(path.join(__dirname, 'widget.html'));
+  widgetWin.on('closed', () => { widgetWin = null; });
+}
+
 function openSettingsWindow() {
   if (settingsWin) { settingsWin.show(); settingsWin.focus(); return; }
   settingsWin = new BrowserWindow({
@@ -148,6 +189,7 @@ function toggleDictation() {
       lockMode = true;
       recorderWin.webContents.send('recorder:lock');
       updateTray();
+      notifyWidget();
       return;
     }
     // sonst: Stop -> transkribieren -> einfügen
@@ -249,6 +291,7 @@ ipcMain.handle('settings:save', (_e, { elevenLabsKey, llmPolishEnabled, llmApiKe
 
   settings.saveSettings({ elevenLabsKey, llmPolishEnabled, llmApiKey, silenceMs, hotkey: hotkeyToSave });
   updateTray();
+  notifyWidget();
   if (hotkeyError) return { ok: false, error: `Restliche Einstellungen gespeichert, aber ${hotkeyError}` };
   return { ok: true };
 });
@@ -256,6 +299,8 @@ ipcMain.handle('settings:save', (_e, { elevenLabsKey, llmPolishEnabled, llmApiKe
 ipcMain.on('settings:close', () => {
   if (settingsWin) settingsWin.close();
 });
+
+ipcMain.on('widget:open-settings', () => openSettingsWindow());
 
 // Single-Instance-Lock: verhindert, dass nach Restarts mehrere Electron-Instanzen
 // laufen (Hotkey klemmt sonst, weil nur die erste registriert ist und die anderen
@@ -281,6 +326,10 @@ if (!gotTheLock) {
 
     // Recorder window (hidden)
     createRecorderWindow();
+
+    // Status-Icon unten rechts (immer sichtbar)
+    createWidgetWindow();
+    widgetWin.webContents.once('did-finish-load', () => notifyWidget());
 
     // Global Hotkey
     registerHotkey();

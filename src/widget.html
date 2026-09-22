@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>Axionis Voice — Status</title>
+<style>
+  :root {
+    --obsidian: #0E0F12;
+    --coal: #161720;
+    --coal-2: #1c1d28;
+    --ember: #FF5A36;
+    --ember-2: #ff7a52;
+    --ember-glow: rgba(255,90,54,0.55);
+    --ember-line: rgba(255,90,54,0.40);
+    --bone: #F1ECE3;
+  }
+  html, body {
+    margin: 0;
+    width: 100%;
+    height: 100%;
+    background: transparent;
+    overflow: hidden;
+    -webkit-user-select: none;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+  }
+  body {
+    display: flex;
+    align-items: flex-end;
+    justify-content: flex-end;
+  }
+  .pill {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    height: 44px;
+    width: 44px;
+    padding: 0 12px;
+    border-radius: 22px;
+    background: linear-gradient(160deg, var(--coal-2), var(--obsidian));
+    border: 1px solid rgba(241,236,227,0.10);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.45);
+    cursor: pointer;
+    transition: width .22s ease, border-color .18s, box-shadow .18s, transform .12s;
+    box-sizing: border-box;
+    overflow: hidden;
+    justify-content: center;
+  }
+  .pill:hover {
+    transform: scale(1.06);
+    border-color: var(--ember-line);
+  }
+  .bolt { width: 18px; height: 18px; flex: none; }
+  .bolt path { fill: var(--ember); transition: fill .2s; }
+
+  /* Ruhezustand: dezenter Bolt */
+  body.state-idle .bolt path { fill: #6b6f7a; }
+
+  /* Nicht eingerichtet: pulsierender Ring, ladet zum Klicken ein */
+  body.state-needs-setup .pill { animation: needs-setup-pulse 1.8s ease-out infinite; }
+  @keyframes needs-setup-pulse {
+    0% { box-shadow: 0 8px 24px rgba(0,0,0,0.45), 0 0 0 0 var(--ember-glow); }
+    70% { box-shadow: 0 8px 24px rgba(0,0,0,0.45), 0 0 0 9px rgba(255,90,54,0); }
+    100% { box-shadow: 0 8px 24px rgba(0,0,0,0.45), 0 0 0 0 rgba(255,90,54,0); }
+  }
+
+  /* Aufnahme: Pille wird breiter, Wave-Balken erscheinen */
+  body.state-recording .pill { width: 108px; justify-content: flex-start; border-color: var(--ember-line); }
+  .wave { display: none; align-items: flex-end; gap: 3px; height: 18px; }
+  body.state-recording .wave { display: flex; }
+  .wave span { display: block; width: 3px; border-radius: 2px; background: linear-gradient(180deg, var(--ember-2), var(--ember)); transform-origin: bottom; animation: wave 1.0s ease-in-out infinite; }
+  .wave span:nth-child(1){height:40%;animation-delay:-0.9s}
+  .wave span:nth-child(2){height:80%;animation-delay:-0.6s}
+  .wave span:nth-child(3){height:100%;animation-delay:-0.3s}
+  .wave span:nth-child(4){height:60%;animation-delay:-0.8s}
+  .wave span:nth-child(5){height:90%;animation-delay:-0.1s}
+  @keyframes wave { 0%, 100% { transform: scaleY(0.3); } 50% { transform: scaleY(1); } }
+
+  /* Verarbeitung (Transkription/Politur): rotierender Ring um den Bolt */
+  .spinner { display: none; width: 26px; height: 26px; border-radius: 50%; border: 2px solid rgba(255,90,54,0.18); border-top-color: var(--ember); position: absolute; animation: spin 0.9s linear infinite; }
+  body.state-processing .pill { position: relative; }
+  body.state-processing .spinner { display: block; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Fehler: dezenter Ring-Akzent */
+  body.state-error .pill { border-color: rgba(255,138,138,0.55); }
+</style>
+</head>
+<body class="state-idle">
+  <div class="pill" id="pill" title="Axionis Voice">
+    <span class="spinner" aria-hidden="true"></span>
+    <svg class="bolt" viewBox="0 0 24 24" aria-hidden="true"><path d="M14.615 1.595a.75.75 0 0 1 .359.852L12.982 9.75h7.268a.75.75 0 0 1 .548 1.262l-10.5 11.25a.75.75 0 0 1-1.272-.71l1.992-7.302H3.75a.75.75 0 0 1-.548-1.262l10.5-11.25a.75.75 0 0 1 .913-.143Z"/></svg>
+    <span class="wave" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span></span>
+  </div>
+  <script src="widget-renderer.js"></script>
+</body>
+</html>
