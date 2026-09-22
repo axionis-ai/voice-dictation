@@ -1,42 +1,42 @@
 # Changelog
 
-Alle nennenswerten Änderungen an Axionis Voice, neueste zuerst.
+All notable changes to Axionis Voice, newest first.
 
 ## 0.9.1
-- **Fix:** Klick auf das Status-Icon öffnete keine Einstellungen mehr (Regression aus 0.9.0 — `-webkit-app-region: drag` hatte auf demselben Element auch normale Klicks verschluckt). Ziehen jetzt manuell per mousedown/mousemove/mouseup gebaut.
-- Status-Icon um 25 % verkleinert.
-- Fenster-Innenpolster von 36px auf 16px reduziert (Lücke beim Ziehen an den Bildschirmrand).
+- **Fix:** clicking the status icon no longer opened settings (regression from 0.9.0 — `-webkit-app-region: drag` was also swallowing normal clicks on the same element). Dragging is now built manually via mousedown/mousemove/mouseup.
+- Status icon reduced in size by 25%.
+- Window inner padding reduced from 36px to 16px (the gap left when dragging to the screen edge).
 
 ## 0.9.0
-- Status-Icon frei verschiebbar (per Ziehen), Position wird gespeichert. "Position zurücksetzen"-Button in den Einstellungen.
+- Status icon can now be freely dragged to a new position; the position is remembered. New "Reset position" button in settings.
 
 ## 0.8.0
-- Maximale Aufnahmedauer einstellbar (1–120 Minuten, Standard 30 min) — vorher fest 60 Sekunden.
+- Maximum recording duration is now configurable (1–120 minutes, default 30 min) — previously a fixed 60 seconds.
 
 ## 0.7.0
-- Glossar-Feld für Eigennamen/Fachbegriffe, die ElevenLabs Scribe per `keyterms`-Parameter bevorzugt erkennt (z. B. korrekte Schreibweise von Produktnamen).
+- Glossary field for proper nouns/technical terms that ElevenLabs Scribe should recognize with a preferred spelling (via the `keyterms` parameter) — e.g. correct spelling of product names.
 
 ## 0.6.2
-- Soundwave-Balken in der Aufnahme-Pille vergrößert.
+- Enlarged the soundwave bars inside the recording pill.
 
 ## 0.6.1
-- Aufnahme-Pille verkleinert, Licht-Ring sitzt jetzt direkt am Rand der Kugel.
+- Shrunk the recording pill; the processing light-ring now hugs the circle's edge directly.
 
 ## 0.6.0
-- Soundwave-Visualisierung während der Aufnahme überarbeitet (dichter, symmetrisch, Logo während der Aufnahme ausgeblendet). Verarbeitungs-Ring rotiert jetzt außerhalb der Kugel ("Beam"-Technik wie auf der Website). Bugfix: sichtbares Rechteck-Artefakt durch `filter: drop-shadow` behoben.
+- Reworked the soundwave visualization shown while recording (denser, symmetric, logo hidden during recording). The processing ring now rotates outside the circle (same "beam" technique used on the website). Bugfix: fixed a visible rectangle artifact caused by `filter: drop-shadow`.
 
 ## 0.5.0
-- Hover-Tooltip am Status-Icon (später in 0.9.1 wieder entfernt), optische Politur, Ein/Aus-Schalter für das Status-Icon.
+- Hover tooltip on the status icon (later removed again in 0.9.1), visual polish, on/off toggle for the status icon.
 
 ## 0.4.0
-- Neues, immer sichtbares Status-Icon unten rechts (zeigt Aufnahme/Verarbeitung/Fehler live), Klick öffnet Einstellungen.
+- New, always-visible status icon in the bottom-right corner (shows recording/processing/error live), clicking it opens settings.
 
 ## 0.3.0
-- Einstellbarer Hotkey (statt fest Win+Y), einstellbare Pause bis Auto-Stopp, ElevenLabs-Affiliate-Link. Bugfix: Dev- und installierte Version nutzten unterschiedliche Config-Ordner.
+- Configurable hotkey (instead of fixed Win+Y), configurable pause-before-auto-stop, ElevenLabs affiliate link. Bugfix: the dev build and the installed build were using different config folders.
 
 ## 0.2.0
-- Erstes öffentliches Release: Einstellungsfenster für eigene API-Keys (ersetzt `.env`), Windows-Installer (NSIS) statt portabler .exe, Axionis-Branding (Blitz-Logo, Website-Farben), Windows-verschlüsselte Key-Speicherung.
+- First public release: settings window for your own API keys (replaces `.env`), Windows installer (NSIS) instead of a portable .exe, Axionis branding (bolt logo, website colors), Windows-encrypted key storage.
 
-## 0.1.x (intern, vor Veröffentlichung)
-- Ursprüngliches persönliches Tool: Win+Y → ElevenLabs Scribe (Batch) → Groq-Politur → Einfügen.
-- Kritischer Fund und Fix: Die Politur-KI hat diktierte Texte, die wie eine Anfrage klangen (z. B. "Schreibe mir eine Zusammenfassung..."), inhaltlich beantwortet statt sie nur zu bereinigen — mit `<diktat>`-Markierung + Anti-Hijack-Anweisung im Prompt sowie einer Längen-Plausibilitätsprüfung als Sicherheitsnetz behoben.
+## 0.1.x (internal, pre-release)
+- Original personal tool: Win+Y → ElevenLabs Scribe (batch) → Groq polish → paste.
+- Critical finding and fix: the polishing AI would sometimes answer dictated text that sounded like a request (e.g. "write me a summary of...") instead of just cleaning it up — fixed with a `<dictation>`-style delimiter plus an anti-hijack instruction in the prompt, and a length-plausibility check as a safety net.

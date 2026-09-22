@@ -1,93 +1,90 @@
 # Lessons Learned
 
-Technische Erkenntnisse aus der Entwicklung, die beim nächsten Electron-Projekt (oder bei einer
-Weiterentwicklung dieses hier) Zeit sparen. Jede davon hat in der Praxis zu echten, teils
-verwirrenden Fehlersuchen geführt — hier bewusst mit Ursache und nicht nur Symptom festgehalten.
+Technical findings from development that will save time on the next Electron project (or on
+further work on this one). Each of these caused a real, sometimes confusing debugging session in
+practice — recorded here with root cause, not just the symptom.
 
-## 1. OneDrive + `node_modules` verträgt sich schlecht
+## 1. OneDrive and `node_modules` don't mix well
 
-Ein Projektordner, der live von OneDrive synchronisiert wird, führte zu einer strukturell
-korrupten `node_modules`-Installation (einzelne Pakete fehlten Dateien, z. B. `fs-extra`s
-`copy-sync/index.js`) — vermutlich durch Schreibkonflikte, während OneDrive parallel synchronisiert.
-`npm install` allein behebt das **nicht** zuverlässig, da npm bereits vorhandene (aber unvollständige)
-Paketordner nicht automatisch neu herunterlädt. Fix: `node_modules` komplett löschen, dann neu
-installieren. Empfehlung: Node-Projekte nach Möglichkeit außerhalb live-synchronisierter Ordner
-entwickeln, oder den Ordner von der Synchronisation ausschließen.
+A project folder that's live-synced by OneDrive ended up with a structurally corrupted
+`node_modules` installation (individual packages were missing files, e.g. `fs-extra`'s
+`copy-sync/index.js`) — most likely caused by write conflicts while OneDrive was syncing in
+parallel. `npm install` alone does **not** reliably fix this, since npm won't re-download package
+folders that already exist (even if incomplete). Fix: delete `node_modules` entirely, then
+reinstall from scratch. Recommendation: develop Node projects outside live-synced folders where
+possible, or exclude the folder from syncing.
 
-## 2. `ELECTRON_RUN_AS_NODE=1` macht Electron unbemerkt zu einem reinen Node-Prozess
+## 2. `ELECTRON_RUN_AS_NODE=1` silently turns Electron into a plain Node process
 
-Wenn diese Umgebungsvariable gesetzt ist (z. B. von einem übergeordneten Dev-Tool/Terminal geerbt),
-verhält sich `electron.exe` wie ein normales Node.js-Binary: `require('electron')` liefert dann
-nur einen Pfad-String statt der echten API — `app`, `BrowserWindow`, `Tray`, `safeStorage` etc. sind
-alle `undefined`, oft ohne offensichtlichen Fehler an der erwarteten Stelle. Symptom war zunächst
-kaum von "Electron startet einfach nicht" zu unterscheiden. Fix: `env -u ELECTRON_RUN_AS_NODE`
-vor jedem Start, wenn man eine automatisierte Shell/CI-Umgebung für echte GUI-Tests nutzt.
+When this environment variable is set (e.g. inherited from a parent dev tool/terminal),
+`electron.exe` behaves like a regular Node.js binary: `require('electron')` then returns only a
+path string instead of the real API — `app`, `BrowserWindow`, `Tray`, `safeStorage`, etc. are all
+`undefined`, often without an obvious error at the point of failure. The symptom was initially
+hard to distinguish from "Electron just isn't starting". Fix: `env -u ELECTRON_RUN_AS_NODE` before
+every launch when using an automated shell/CI environment for real GUI testing.
 
-## 3. `app.getName()` liefert im Dev- und im gebauten Betrieb unterschiedliche Werte
+## 3. `app.getName()` returns different values in dev vs. packaged builds
 
-Im Dev-Betrieb (`electron .`) nutzt Electron das `name`-Feld aus `package.json` für den
-`userData`-Pfad (`app.getPath('userData')`). In der mit `electron-builder` gebauten App wird
-stattdessen `productName` verwendet. Ohne Gegenmaßnahme landen Konfigurationsdateien der Dev- und
-der installierten Version in zwei verschiedenen Ordnern — das Tool "vergisst" scheinbar
-zufällig gespeicherte Einstellungen, je nachdem wie es gerade gestartet wurde. Fix: `app.setName(...)`
-explizit und früh in `main.js` aufrufen, mit demselben Wert wie `productName`.
+In dev mode (`electron .`), Electron uses the `name` field from `package.json` for the `userData`
+path (`app.getPath('userData')`). In the app built with `electron-builder`, it uses `productName`
+instead. Without a workaround, the dev build's and the installed build's config files end up in
+two different folders — the tool appears to randomly "forget" saved settings depending on how it
+was launched. Fix: call `app.setName(...)` explicitly and early in `main.js`, with the same value
+as `productName`.
 
-## 4. `filter: drop-shadow()` in einem transparenten Electron-Fenster kann als sichtbares Rechteck rendern
+## 4. `filter: drop-shadow()` in a transparent Electron window can render as a visible rectangle
 
-CSS `filter`-Effekte (hier: ein Leucht-Schatten auf einem SVG-Icon) rendern in einem
-`transparent: true`-BrowserWindow gelegentlich mit einer sichtbaren rechteckigen Kante statt eines
-weichen Verlaufs — vermutlich ein Rendering-Sonderfall der GPU-Kompositierung bei transparenten
-Fenstern. `box-shadow` und maskenbasierte Techniken (`mask-composite`, conic-gradient) sind davon
-nicht betroffen. Faustregel: in transparenten Fenstern `filter` grundsätzlich meiden.
+CSS `filter` effects (here: a glow on an SVG icon) occasionally rendered with a visible rectangular
+edge instead of a soft gradient inside a `transparent: true` BrowserWindow — likely a GPU
+compositing edge case specific to transparent windows. `box-shadow` and mask-based techniques
+(`mask-composite`, conic-gradient) are not affected. Rule of thumb: avoid `filter` in transparent
+windows altogether.
 
-## 5. `-webkit-app-region: drag` und ein Klick-Handler auf demselben Element vertragen sich nicht zuverlässig
+## 5. `-webkit-app-region: drag` and a click handler on the same element don't mix reliably
 
-Ein Element mit `-webkit-app-region: drag` (Standard-Technik, um frameless Fenster ziehbar zu
-machen) hat in der Praxis normale `click`-Events auf genau diesem Element unzuverlässig gemacht —
-nach dem ersten Ziehversuch reagierte ein Klick nicht mehr zuverlässig. Robuster Ersatz: Ziehen
-manuell über `mousedown`/`mousemove`/`mouseup` bauen, mit einem kleinen Bewegungs-Schwellwert
-(hier 4px), der entscheidet, ob eine Geste ein Klick oder ein Zug war — kein `-webkit-app-region`
-nötig.
+An element with `-webkit-app-region: drag` (the standard technique for making frameless windows
+draggable) made normal `click` events on that same element unreliable in practice — after the
+first drag attempt, a click would no longer register reliably. More robust replacement: build
+dragging manually via `mousedown`/`mousemove`/`mouseup`, with a small movement threshold (4px here)
+that decides whether a gesture was a click or a drag — no `-webkit-app-region` needed.
 
-## 6. `webContents.sendInputEvent()` liefert immer `screenX`/`screenY` = 0
+## 6. `webContents.sendInputEvent()` always reports `screenX`/`screenY` as 0
 
-Beim Testen der Zieh-Logik über synthetische Maus-Events (`sendInputEvent`) blieben `screenX`/
-`screenY` des resultierenden DOM-`MouseEvent` konstant `0` — unabhängig von den übergebenen
-Koordinaten. Für Logik, die auf absoluten Bildschirmkoordinaten basiert (z. B. Fenster-Ziehen über
-Deltas), lässt sich das **nicht** über synthetische Events verifizieren; das ist eine Grenze des
-Test-Werkzeugs, kein Hinweis auf einen Fehler im echten Verhalten bei echter Mauseingabe.
-Konsequenz: solche Logik per Code-Review + einmaligem echtem Test durch einen Menschen absichern,
-nicht per automatisiertem Maus-Event-Test.
+When testing the drag logic via synthetic mouse events (`sendInputEvent`), the resulting DOM
+`MouseEvent`'s `screenX`/`screenY` stayed constantly `0`, regardless of the coordinates passed in.
+Logic that depends on absolute screen coordinates (e.g. window dragging via deltas) **cannot** be
+verified this way — that's a limitation of the testing tool, not evidence of a bug in real-world
+behavior with actual mouse input. Consequence: verify such logic through code review plus a single
+real human test, not through automated synthetic mouse-event tests.
 
-## 7. CSS-Transitions/-Animationen können in einem `show: false`-Fenster eingefroren bleiben
+## 7. CSS transitions/animations can stay frozen in a `show: false` window
 
-In einem unsichtbaren (`show: false`) `BrowserWindow` wurde eine laufende `transition` (z. B.
-Breitenänderung) nie über ihren Startwert hinaus animiert — `getComputedStyle()` lieferte dauerhaft
-den Ausgangswert, obwohl die zugehörige CSS-Regel nachweislich korrekt matchte (verifiziert über
-`element.matches(selector)` und `cssRules[i].cssText`). Vermutung: Chromium pausiert die
-Rendering-/Compositor-Pipeline für unsichtbare Fenster, wodurch die Transition nie einen zweiten
-Frame bekommt. Konsequenz: `getComputedStyle()` einer transitionierenden Eigenschaft aus einem
-verstecken Test-Fenster ist unzuverlässig — stattdessen die zugrunde liegende CSS-Regel direkt
-prüfen (Selector-Match + Regel-Text), nicht den animierten Wert.
+In an invisible (`show: false`) `BrowserWindow`, a running `transition` (e.g. a width change) never
+animated past its starting value — `getComputedStyle()` kept returning the initial value, even
+though the matching CSS rule was verifiably correct (confirmed via `element.matches(selector)` and
+`cssRules[i].cssText`). Likely cause: Chromium pauses the rendering/compositor pipeline for
+invisible windows, so the transition never gets a second frame. Consequence: `getComputedStyle()`
+of a transitioning property from a hidden test window is unreliable — check the underlying CSS
+rule directly instead (selector match + rule text), not the animated value.
 
-## 8. ElevenLabs Scribe `keyterms`: Encoding nirgends dokumentiert, live verifiziert
+## 8. ElevenLabs Scribe `keyterms`: encoding undocumented, verified live
 
-Die API-Doku nennt den Parameter `keyterms` (Liste von Begriffen zur Erkennungs-Verbesserung),
-zeigt aber in keinem Beispiel, wie mehrere Begriffe in einer `multipart/form-data`-Anfrage kodiert
-werden. Ein JSON-Array-String in einem Feld (`["Bionix","Axionis"]`) wird mit
-`"Some keyword contains invalid characters"` abgelehnt, weil `[`/`]` zu den für Keyterms verbotenen
-Zeichen zählen. Richtig (live gegen die echte API bestätigt, inklusive Vorher/Nachher-Vergleich mit
-synthetisierter Sprache): das Feld `keyterms` mehrfach wiederholen, ein Begriff pro Formularteil.
+The API docs mention the `keyterms` parameter (a list of terms to improve recognition of) but no
+example shows how to encode multiple terms in a `multipart/form-data` request. A JSON-array string
+in one field (`["Bionix","Axionis"]`) gets rejected with `"Some keyword contains invalid
+characters"`, because `[`/`]` are on the list of forbidden characters for keyterms. The correct
+approach (confirmed live against the real API, including a synthesized-speech before/after
+comparison): repeat the `keyterms` field, one term per form part.
 
-## 9. Windows feuert ein `moved`-Event direkt beim Erzeugen eines Fensters
+## 9. Windows fires a `moved` event right when a window is created
 
-Auch ohne jede Nutzerinteraktion löst das bloße Erzeugen eines `BrowserWindow` unter Windows manchmal
-sofort ein `moved`-Event aus (vermutlich Positions-/DPI-Finalisierung durch den Fenstermanager).
-Ohne Gegenmaßnahme wird das fälschlich als "Nutzer hat das Fenster verschoben" gespeichert. Fix:
-`moved`-Events in den ersten 1–2 Sekunden nach dem Erzeugen des Fensters ignorieren.
+Even without any user interaction, simply creating a `BrowserWindow` on Windows sometimes
+immediately fires a `moved` event (likely position/DPI finalization by the window manager).
+Without a safeguard, this gets incorrectly saved as "the user moved the window". Fix: ignore
+`moved` events for the first 1–2 seconds after the window is created.
 
-## Prozess-Lektion: kleine Screenshots lügen
+## Process lesson: small screenshots lie
 
-Mehrfach wurden Größen/Formen aus winzigen (~150×80px) Screenshots falsch eingeschätzt (z. B. ein
-korrekt 44px breites Element für "zu breit" gehalten). Bei Unsicherheit über Maße/Farben:
-`getComputedStyle()`/`matches()` direkt abfragen statt aus einem kleinen Bild zu schätzen.
+Sizes/shapes were misjudged from tiny (~150×80px) screenshots more than once (e.g. a correctly
+44px-wide element was mistaken for "too wide"). When in doubt about dimensions/colors: query
+`getComputedStyle()`/`matches()` directly instead of eyeballing a small image.

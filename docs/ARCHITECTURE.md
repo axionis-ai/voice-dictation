@@ -1,131 +1,132 @@
-# Architektur — Axionis Voice
+# Architecture — Axionis Voice
 
-Interne technische Dokumentation. Für Nutzungsanleitung siehe [README.md](../README.md).
+Internal technical documentation. For usage instructions, see [README.md](../README.md).
 
-## Überblick
+## Overview
 
-Axionis Voice ist eine Electron-Tray-App für Windows (kein Installer-Prozess außer NSIS für die
-Verteilung — kein Backend, kein Server, keine Axionis-eigene Infrastruktur beteiligt). Sie läuft
-komplett lokal und spricht nur mit zwei externen APIs: ElevenLabs (Speech-to-Text) und optional
-Groq (LLM-Textpolitur).
+Axionis Voice is an Electron tray app for Windows (no backend, no server, no Axionis-owned
+infrastructure involved beyond the NSIS installer for distribution). It runs entirely locally and
+only talks to two external APIs: ElevenLabs (speech-to-text) and, optionally, Groq (LLM text
+polishing).
 
 ```
-Win+Y ──▶ recorder-renderer.js (Mikro + VAD)
-              │  (Stop: Stille erkannt ODER Hotkey ODER Max-Dauer erreicht)
+Win+Y ──▶ recorder-renderer.js (mic + VAD)
+              │  (stops on: silence detected, OR hotkey, OR max duration reached)
               ▼
          main.js: recorder:recording (audio buffer)
               │
               ▼
-         scribe.js ──▶ ElevenLabs /v1/speech-to-text (+ keyterms aus Glossar)
+         scribe.js ──▶ ElevenLabs /v1/speech-to-text (+ keyterms from the glossary)
               │
               ▼
-         clean.js (regelbasiert, kostenlos: Füllwörter, Wortwiederholungen)
+         clean.js (rule-based, free: filler words, repeated words)
               │
-              ▼ (nur wenn KI-Politur aktiviert)
+              ▼ (only if AI polish is enabled)
          polish.js ──▶ Groq /chat/completions (optional)
               │
               ▼
-         voiceCommands.js (Sprachbefehle → Satzzeichen: "komma" → ",", ...)
+         voiceCommands.js (voice commands → punctuation: "comma" → ",", ...)
               │
               ▼
-         inserter.js (Zwischenablage sichern → einfügen → wiederherstellen)
+         inserter.js (back up clipboard → paste → restore clipboard)
 ```
 
-## Prozesse / Fenster
+## Processes / windows
 
-Electron trennt Haupt- (main.js) und Renderer-Prozesse (BrowserWindows). Diese App hat vier
-BrowserWindows, alle mit `nodeIntegration: true, contextIsolation: false` (kein Preload-Skript
-nötig — bewusst einfach gehalten, da nur lokaler, selbst geschriebener Code geladen wird, nie
-fremder/Remote-Content):
+Electron separates the main process (main.js) from renderer processes (BrowserWindows). This app
+has four BrowserWindows, all using `nodeIntegration: true, contextIsolation: false` (no preload
+script needed — kept deliberately simple, since only local, self-authored code is ever loaded,
+never remote/third-party content):
 
-| Fenster | Zweck | sichtbar? |
+| Window | Purpose | Visible? |
 |---|---|---|
-| `recorder.html` + `recorder-renderer.js` | `getUserMedia`/`MediaRecorder`, Voice-Activity-Detection (VAD), Start-/Stop-Beep | nie (1×1px, versteckt) |
-| `settings.html` + `settings-renderer.js` | Einstellungsmaske | auf Anfrage (Tray-Menü, Status-Icon-Klick, Erststart ohne Key) |
-| `widget.html` + `widget-renderer.js` | immer sichtbares Status-Icon unten rechts | immer (abschaltbar) |
-| Tray (`Tray`-API, kein BrowserWindow) | Kontextmenü, Tooltip mit Status | immer |
+| `recorder.html` + `recorder-renderer.js` | `getUserMedia`/`MediaRecorder`, voice-activity detection (VAD), start/stop beep | never (1×1px, hidden) |
+| `settings.html` + `settings-renderer.js` | settings mask | on demand (tray menu, status-icon click, first run without a key) |
+| `widget.html` + `widget-renderer.js` | always-visible status icon in the bottom-right corner | always (can be disabled) |
+| Tray (`Tray` API, not a BrowserWindow) | context menu, tooltip with status | always |
 
-## Zustandsmaschine (main.js)
+## State machine (main.js)
 
-`state` ∈ `idle | recording | transcribing | polishing | error`, zentral in `main.js` gehalten.
-`setStatus()` ist der einzige Ort, der `state` ändert — aktualisiert bei jedem Wechsel automatisch
-Tray-Tooltip (`updateTray()`) und Status-Icon (`notifyWidget()`). Ausnahme: der Wechsel in den
-"Lock-Modus" (Feststelltaste, zweimal schnell Win+Y) läuft außerhalb von `setStatus()` und ruft
-`updateTray()`/`notifyWidget()` deshalb explizit selbst auf.
+`state` ∈ `idle | recording | transcribing | polishing | error`, held centrally in `main.js`.
+`setStatus()` is the single place that changes `state` — it automatically updates the tray tooltip
+(`updateTray()`) and the status icon (`notifyWidget()`) on every change. Exception: entering
+"lock mode" (caps-lock-style recording, triggered by double-tapping Win+Y) happens outside
+`setStatus()` and therefore calls `updateTray()`/`notifyWidget()` explicitly itself.
 
-`lockMode` (bool): true = Silence-Auto-Stop ist deaktiviert, Aufnahme läuft bis zum nächsten
-Hotkey-Druck oder bis `maxRecordMs` erreicht ist (derselbe Wert gilt für Normal- und Lock-Modus).
+`lockMode` (bool): true = silence-based auto-stop is disabled, recording continues until the next
+hotkey press or until `maxRecordMs` is reached (the same value applies in both normal and lock
+mode).
 
-## Konfiguration (`settings.js`)
+## Configuration (`settings.js`)
 
-Einzige Quelle der Wahrheit für Nutzereinstellungen. Speicherort: `app.getPath('userData')/config.json`
-(Windows: `%AppData%\Axionis Voice\config.json`). Wichtig: `app.setName('Axionis Voice')` wird in
-main.js explizit gesetzt, weil Electron im **Dev-Betrieb** (`electron .`) den `name`-Wert aus
-package.json für den userData-Pfad nutzt, in der **gebauten** App aber `productName` — ohne das
-`setName()` würden Dev- und installierte Version in zwei verschiedenen Ordnern lesen/schreiben
-(siehe [LESSONS-LEARNED.md](LESSONS-LEARNED.md)).
+The single source of truth for user settings. Storage location: `app.getPath('userData')/config.json`
+(Windows: `%AppData%\Axionis Voice\config.json`). Important: `app.setName('Axionis Voice')` is set
+explicitly in main.js, because Electron uses the `name` field from package.json for the userData
+path in **dev mode** (`electron .`), but `productName` in the **packaged** app — without that
+`setName()` call, the dev build and the installed build would read/write to two different folders
+(see [LESSONS-LEARNED.md](LESSONS-LEARNED.md)).
 
-Secrets (ElevenLabs-/Groq-Key) werden nie im Klartext gespeichert: `safeStorage.encryptString()`
-(Windows DPAPI, an das jeweilige Windows-Konto gebunden) vor dem Schreiben, `decryptString()` beim
-Lesen. Der Renderer der Einstellungsmaske bekommt beim Laden nur Booleans (`hasElevenLabsKey` etc.),
-nie den Klartext-Key zurück.
+Secrets (ElevenLabs/Groq keys) are never stored in plain text: `safeStorage.encryptString()`
+(Windows DPAPI, tied to the respective Windows account) before writing, `decryptString()` when
+reading. The settings mask's renderer only ever receives booleans (`hasElevenLabsKey`, etc.) when
+loading — never the plaintext key.
 
-Alle Felder: `elevenLabsKey`, `llmPolishEnabled`, `llmApiKey`, `llmBaseUrl`, `llmModel`, `silenceMs`,
-`hotkey`, `showWidget`, `glossary` (Array), `maxRecordMs`, `widgetX`/`widgetY` (Position, `null` =
-Standard unten rechts).
+All fields: `elevenLabsKey`, `llmPolishEnabled`, `llmApiKey`, `llmBaseUrl`, `llmModel`, `silenceMs`,
+`hotkey`, `showWidget`, `glossary` (array), `maxRecordMs`, `widgetX`/`widgetY` (position, `null` =
+default bottom-right).
 
-## Status-Icon / Widget (`widget.html`, `widget-renderer.js`)
+## Status icon / widget (`widget.html`, `widget-renderer.js`)
 
-Eigenes, immer-sichtbares `BrowserWindow` (frameless, transparent, `alwaysOnTop`, `skipTaskbar`).
-Design-Entscheidungen mit Begründung:
+Its own always-visible `BrowserWindow` (frameless, transparent, `alwaysOnTop`, `skipTaskbar`).
+Design decisions, with reasoning:
 
-- **Frei verschiebbar, aber kein `-webkit-app-region: drag`**: dieses Attribut hat in der Praxis
-  normale Klick-Events auf demselben Element unzuverlässig gemacht (siehe Lessons Learned). Ziehen
-  ist deshalb manuell gebaut: `mousedown` merkt Startposition (Fenster + Maus via `screenX/screenY`),
-  `mousemove` berechnet Delta und schickt per IPC (`widget:drag-to`) die neue Fensterposition,
-  `mouseup` löst nur dann `widget:open-settings` aus, wenn die Bewegung unter einem Schwellwert
-  (4px) blieb — sonst war es ein Ziehen, kein Klick.
-- **Position-Persistenz**: `widgetWin.on('moved', ...)` speichert (entprellt, 400ms) die neue
-  Position in `settings.js`. Die ersten 1.5s nach dem Erzeugen des Fensters werden ignoriert, weil
-  Windows selbst direkt beim Erstellen oft ein `moved`-Event feuert (Positions-/DPI-Finalisierung),
-  das sonst fälschlich als Nutzer-Aktion gespeichert würde.
-- **Kein `filter: drop-shadow`**: erzeugt in einem `transparent: true`-Fenster ein sichtbares
-  Rechteck statt eines weichen Leuchtens. Aller Glow-Effekt läuft über `box-shadow` oder die
-  Masken-basierte "Beam"-Technik (conic-gradient + `mask-composite: exclude`), identisch zu den
-  Lichteffekten auf axionisconsulting.com (`css/effects.css`, Klasse `.beam`).
-- **Großzügiges CSS-Padding** (16px) um den sichtbaren Inhalt: nötig, damit `box-shadow` nicht hart
-  an der Fensterkante (`overflow: hidden`) abgeschnitten wird — Kompromiss, da dieses Padding auch
-  bedeutet, dass die Pille beim Ziehen nie exakt bis an den Bildschirmrand reicht.
+- **Freely draggable, but no `-webkit-app-region: drag`**: this attribute made normal click events
+  on the same element unreliable in practice (see Lessons Learned). Dragging is therefore built
+  manually: `mousedown` records the starting position (window + mouse via `screenX/screenY`),
+  `mousemove` computes the delta and sends the new window position via IPC (`widget:drag-to`),
+  `mouseup` only fires `widget:open-settings` if the movement stayed under a threshold (4px) —
+  otherwise it was a drag, not a click.
+- **Position persistence**: `widgetWin.on('moved', ...)` saves (debounced, 400ms) the new position
+  to `settings.js`. The first 1.5s after the window is created are ignored, because Windows itself
+  often fires a `moved` event right when the window is created (position/DPI finalization), which
+  would otherwise get saved as if the user had dragged it.
+- **No `filter: drop-shadow`**: renders as a visible rectangle instead of a soft glow inside a
+  `transparent: true` window. All glow effects go through `box-shadow` or the mask-based "beam"
+  technique (conic-gradient + `mask-composite: exclude`), identical to the light effects on
+  axionisconsulting.com (`css/effects.css`, `.beam` class).
+- **Generous CSS padding** (16px) around the visible content: needed so `box-shadow` doesn't get
+  hard-clipped at the window edge (`overflow: hidden`) — a trade-off, since this padding also means
+  the pill can never be dragged all the way flush against the screen edge.
 
-## Sicherheit / Prompt-Hardening (`polish.js`)
+## Security / prompt hardening (`polish.js`)
 
-Der diktierte Text wird nie als bloßer User-Turn an das Politur-Modell geschickt. Grund: ein
-Chat-Modell interpretiert Text, der wie eine Anfrage klingt ("Schreibe mir...", "Liste mir...
-auf"), sonst als Auftrag und beantwortet ihn inhaltlich, statt ihn nur zu bereinigen — reproduzierbar
-verifiziert (siehe CHANGELOG 0.1.x). Gegenmaßnahmen (beide zusammen, nicht nur eine):
+The dictated text is never sent to the polishing model as a bare user turn. Reason: a chat model
+will otherwise interpret text that sounds like a request ("write me...", "list... for me") as an
+instruction and answer it, instead of just cleaning it up — reproducibly verified (see CHANGELOG
+0.1.x). Countermeasures (both together, not just one):
 
-1. **Prompt-Härtung**: Text steht zwischen `<diktat>`-Tags, System-Prompt weist explizit an, dass
-   Fragen/Befehle darin niemals auszuführen sind.
-2. **Längen-Plausibilitätsprüfung** (Defense in Depth, `MAX_GROWTH_RATIO = 1.6`): wenn die Antwort
-   drastisch länger als der Input ist, wird sie verworfen und `main.js` fällt automatisch auf den
-   regelbasiert bereinigten Text zurück (derselbe Mechanismus wie bei einem API-Timeout/-Fehler).
+1. **Prompt hardening**: the text sits between `<dictation>` tags, the system prompt explicitly
+   states that any questions/commands inside must never be carried out.
+2. **Length-plausibility check** (defense in depth, `MAX_GROWTH_RATIO = 1.6`): if the response is
+   drastically longer than the input, it's discarded and `main.js` automatically falls back to the
+   rule-based cleaned text (the same mechanism used for an API timeout/error).
 
-## ElevenLabs-Glossar (`scribe.js`)
+## ElevenLabs glossary (`scribe.js`)
 
-`keyterms`-Parameter der Scribe-API (Liste von Begriffen, auf die die Erkennung "gebiast" wird).
-**Wichtig, nirgends in der offiziellen Doku dokumentiert** (live am Endpunkt verifiziert): mehrere
-Begriffe müssen als mehrfach wiederholtes `keyterms`-Multipart-Feld gesendet werden, nicht als
-JSON-Array-String in einem Feld (wird als ein einzelner, zu langer Begriff mit "invalid characters"
-abgelehnt, da `[`/`]` zu den verbotenen Zeichen zählen). `buildMultipart()` unterstützt deshalb
-Array-Werte für genau diesen Fall (ein Feldname → mehrere Form-Data-Teile).
+The `keyterms` parameter of the Scribe API (a list of terms to bias recognition towards).
+**Not documented anywhere officially** (verified live against the endpoint): multiple terms must
+be sent as a repeated `keyterms` multipart field (one per term), not as a JSON-array string in a
+single field (that gets rejected as one single, overly long term with "invalid characters", since
+`[`/`]` are on the list of forbidden characters). `buildMultipart()` therefore supports array
+values specifically for this case (one field name → multiple form-data parts).
 
 ## Build/Distribution
 
-`electron-builder` mit NSIS-Target (`npm run dist`), Icon selbst gerendert (`tools/make-icon.js`,
-Pixel-für-Pixel ohne externe Bildbibliothek — Blitz-Polygon aus dem echten Website-SVG-Pfad
-abgeleitet, siehe Kommentare in der Datei). Kein Code-Signing (kostenpflichtiges Zertifikat) —
-SmartScreen-Warnung beim ersten Start ist erwartetes Verhalten für unsignierte Freeware.
+`electron-builder` with the NSIS target (`npm run dist`), icon rendered by hand
+(`tools/make-icon.js`, pixel-by-pixel with no external image library — the bolt polygon is derived
+from the real website SVG path, see the comments in that file). No code signing (paid certificate)
+— the SmartScreen warning on first launch is expected behavior for unsigned freeware.
 
-Release-Prozess: `npm run dist` → `gh release create vX.Y.Z <exe>`. Landingpage
-(axionisconsulting.com/voice/) verlinkt auf `.../releases/latest`, nie einen festen Dateinamen —
-bleibt dadurch bei jedem Release automatisch aktuell, ohne die Seite anzufassen.
+Release process: `npm run dist` → `gh release create vX.Y.Z <exe>`. The landing page
+(axionisconsulting.com/voice/) links to `.../releases/latest`, never a fixed filename — it stays
+current automatically with every release, without needing to touch the page.
