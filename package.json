@@ -1,7 +1,7 @@
 {
   "name": "axionis-voice",
   "productName": "Axionis Voice",
-  "version": "0.6.0",
+  "version": "0.6.1",
   "description": "Win+Y Diktat für Windows — ElevenLabs Scribe + optionale KI-Politur, fügt Text ins fokussierte Fenster ein",
   "main": "src/main.js",
   "author": "Axionis Consulting (https://axionisconsulting.com)",

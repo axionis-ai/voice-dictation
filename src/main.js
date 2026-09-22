@@ -134,7 +134,7 @@ function createRecorderWindow() {
 function createWidgetWindow() {
   // Fenster deutlich groesser als der sichtbare Inhalt (grosszuegiges CSS-Padding in
   // widget.html) — sonst schneidet die Fensterkante weiche box-shadow/Glow-Raender hart ab.
-  const WIN_W = 220, WIN_H = 140, MARGIN = 12;
+  const WIN_W = 190, WIN_H = 130, MARGIN = 12;
   const workArea = screen.getPrimaryDisplay().workArea;
   widgetWin = new BrowserWindow({
     width: WIN_W,
