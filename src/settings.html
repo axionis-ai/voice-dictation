@@ -118,6 +118,48 @@
     margin-top: 12px;
     min-height: 16px;
   }
+  .section {
+    border-top: 1px solid var(--hair);
+    margin-top: 22px;
+    padding-top: 18px;
+  }
+  input[type="range"] {
+    width: 100%;
+    accent-color: var(--ember);
+  }
+  .slider-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+  }
+  .slider-value {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 600;
+    color: var(--ember-2);
+    font-size: 13px;
+    white-space: nowrap;
+  }
+  .hotkey-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .hotkey-box {
+    flex: 1;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--hair);
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-size: 13.5px;
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 600;
+    text-align: center;
+    outline: none;
+  }
+  .hotkey-box.listening {
+    border-color: var(--ember-line);
+    color: var(--ember-2);
+  }
 </style>
 </head>
 <body>
@@ -142,6 +184,24 @@
     <div class="field">
       <label for="llmApiKey">Groq API-Key</label>
       <input type="password" id="llmApiKey" placeholder="gsk_...">
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="slider-row">
+      <label for="silenceMs" style="margin-bottom:0">Pause bis Auto-Stopp</label>
+      <span class="slider-value" id="silenceMsValue">1.8 s</span>
+    </div>
+    <p class="hint">Wie lange darfst du beim Diktieren schweigen (Denkpause), bevor die Aufnahme automatisch stoppt?</p>
+    <input type="range" id="silenceMs" min="1" max="30" step="0.5" value="1.8">
+  </div>
+
+  <div class="section">
+    <label>Hotkey</label>
+    <p class="hint">Aufnahme starten/stoppen. Muss mindestens eine Zusatztaste (Strg/Alt/Umschalt/Win) enthalten.</p>
+    <div class="hotkey-row">
+      <div class="hotkey-box" id="hotkeyBox" tabindex="0">Win + Y</div>
+      <button class="secondary" id="hotkeyChangeBtn" type="button">Ändern</button>
     </div>
   </div>
 

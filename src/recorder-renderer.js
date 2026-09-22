@@ -9,7 +9,7 @@
 const { ipcRenderer } = require('electron');
 
 // --- VAD/Beep Konfiguration ---
-const SILENCE_MS = 1800;          // Ruhe nach Sprache -> Auto-Stop
+let silenceMs = 1800;             // Ruhe nach Sprache -> Auto-Stop (vom Main-Prozess pro Start gesetzt, aus den Einstellungen)
 const SPEECH_THRESHOLD = 8;       // max Abweichung von 128 (0-255 Skala) als "Sprache"
 const MIN_SPEECH_MS = 250;        // mind. so lange Sprache erkannt, bevor SILENCE scharf schaltet
 const MAX_RECORD_MS = 60000;      // Sicherheits-Hardstop
@@ -72,14 +72,15 @@ function startVAD() {
     // Normal: nach Sprache + SILENCE_MS Ruhe, oder 60s-Hardstop.
     if (lockMode) {
       if (Date.now() - recordStart > LOCK_MAX_MS) stop();
-    } else if ((hasSpoken && Date.now() - lastSpeechAt > SILENCE_MS) || Date.now() - recordStart > MAX_RECORD_MS) {
+    } else if ((hasSpoken && Date.now() - lastSpeechAt > silenceMs) || Date.now() - recordStart > MAX_RECORD_MS) {
       stop(); // Auto-Stop
     }
   }, 100);
 }
 
-async function start() {
+async function start(opts = {}) {
   try {
+    if (Number.isFinite(opts.silenceMs)) silenceMs = opts.silenceMs;
     if (mediaRecorder && mediaRecorder.state === 'recording') return;
     beep(BEEP_START_FREQ, 140); // Start-Feedback VOR Aufnahme (nicht aufs Band)
     mediaStream = await navigator.mediaDevices.getUserMedia({
@@ -129,7 +130,7 @@ function stop() {
   mediaRecorder.stop();
 }
 
-ipcRenderer.on('recorder:start', () => start());
+ipcRenderer.on('recorder:start', (_e, opts) => start(opts));
 ipcRenderer.on('recorder:stop', () => stop());
 // Feststelltaste aktiviert: Auto-Stop aus, Bestätigung durch zwei hohe Töne.
 ipcRenderer.on('recorder:lock', () => {

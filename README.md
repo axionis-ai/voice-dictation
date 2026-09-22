@@ -14,13 +14,15 @@ Von [Axionis Consulting](https://axionisconsulting.com) gebaut und kostenlos zur
 
 Das Tool nutzt [ElevenLabs Scribe](https://elevenlabs.io) für die Spracherkennung — dafür brauchst du einen **eigenen, kostenlosen** ElevenLabs-Account:
 
-1. Account anlegen auf [elevenlabs.io](https://elevenlabs.io) (kostenloses Kontingent reicht zum Testen).
+1. Account anlegen über [try.elevenlabs.io](https://try.elevenlabs.io/2igpd7r1n610) (kostenloses Kontingent reicht zum Testen — Affiliate-Link von Axionis Consulting, kostet dich nichts extra).
 2. API-Key holen unter *Settings → API Keys*.
 3. Key ins Einstellungsfenster von Axionis Voice eintragen, speichern.
 
 Optional: **KI-Politur** verbessert Grammatik/Zeichensetzung automatisch, dafür einen kostenlosen [Groq](https://console.groq.com/keys)-Key eintragen. Deine Keys werden ausschließlich lokal und verschlüsselt (Windows-eigene Verschlüsselung, an dein Nutzerkonto gebunden) auf deinem Rechner gespeichert — sie verlassen dein Gerät nie außer direkt an ElevenLabs/Groq.
 
-Einstellungen jederzeit über das Tray-Icon → **Einstellungen...** änderbar.
+Einstellungen jederzeit über das Tray-Icon → **Einstellungen...** änderbar — dort auch einstellbar:
+- **Pause bis Auto-Stopp:** wie lange Denkpausen beim Diktieren sein dürfen, bevor die Aufnahme automatisch stoppt (1–30 Sekunden).
+- **Hotkey:** eigene Tastenkombination statt `Win+Y` festlegen.
 
 ## Benutzung
 
@@ -33,9 +35,9 @@ Tray-Kontextmenü → **Test-Paste** fügt einen Testtext ein (prüft Clipboard+
 
 ## Hotkey
 
-- `Win+Y`, Toggle-Modus (1× Start, 2× Stop).
-- Feststelltaste: zweimal schnell `Win+Y` tippen → Aufnahme läuft, bis erneut `Win+Y` gedrückt wird (kein automatischer Stopp bei Stille).
-- Falls `Win+Y` von Windows belegt ist: Tray zeigt einen Fehler.
+- Standard `Win+Y`, Toggle-Modus (1× Start, 2× Stop) — in den Einstellungen frei änderbar (muss mindestens eine Zusatztaste wie Strg/Alt/Umschalt/Win enthalten).
+- Feststelltaste: zweimal schnell den Hotkey tippen → Aufnahme läuft, bis er erneut gedrückt wird (kein automatischer Stopp bei Stille).
+- Falls die gewählte Kombination von Windows belegt ist: Tray zeigt einen Fehler, bisheriger Hotkey bleibt aktiv.
 
 ## Wie es funktioniert
 

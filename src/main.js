@@ -15,7 +15,12 @@ const settings = require('./settings');
 const autostart = require('./autostart');
 
 const APP_NAME = 'Axionis Voice';
-const HOTKEY = 'Super+Y';
+// Erzwingt denselben app-Namen (und damit denselben userData-Ordner fuer settings.js)
+// im Dev-Betrieb (electron . liest sonst package.json "name", nicht "build.productName")
+// wie in der gebauten/installierten App — sonst landet die Config je nach Startart in
+// zwei verschiedenen Ordnern.
+app.setName(APP_NAME);
+let registeredHotkey = null; // aktuell bei Electron registrierter Accelerator (zum sauberen Unregister bei Wechsel)
 let tray = null;
 let recorderWin = null;
 let settingsWin = null;
@@ -33,7 +38,24 @@ function setStatus(next, err) {
 
 function hotkeyLabel() {
   // Anzeige: CommandOrControl -> Ctrl, Super -> Win
-  return HOTKEY.replace('CommandOrControl', 'Ctrl').replace('Super', 'Win');
+  return settings.getSettings().hotkey.replace('CommandOrControl', 'Ctrl').replace('Super', 'Win');
+}
+
+// Registriert den in den Einstellungen hinterlegten Hotkey neu (z.B. nach Aenderung
+// in der Maske). Neuen Accelerator ZUERST probieren, alten erst bei Erfolg abmelden —
+// so bleibt bei einer belegten Kombination der bisherige Hotkey unangetastet nutzbar.
+function registerHotkey() {
+  const hotkey = settings.getSettings().hotkey;
+  if (hotkey === registeredHotkey) return true;
+  const ok = globalShortcut.register(hotkey, toggleDictation);
+  if (!ok) {
+    setStatus('error', `Hotkey ${hotkey} konnte nicht registriert werden (von Windows belegt?)`);
+    return false;
+  }
+  if (registeredHotkey) globalShortcut.unregister(registeredHotkey);
+  registeredHotkey = hotkey;
+  console.log(`Hotkey registriert: ${hotkey}`);
+  return true;
 }
 
 function stateLabel() {
@@ -97,7 +119,7 @@ function openSettingsWindow() {
   if (settingsWin) { settingsWin.show(); settingsWin.focus(); return; }
   settingsWin = new BrowserWindow({
     width: 420,
-    height: settings.getSettings().llmPolishEnabled ? 560 : 460,
+    height: settings.getSettings().llmPolishEnabled ? 700 : 600,
     resizable: false,
     title: `${APP_NAME} — Einstellungen`,
     icon: path.join(__dirname, 'icon.png'),
@@ -136,7 +158,7 @@ function toggleDictation() {
     setStatus('recording');
     lockMode = false;
     recordingStartedAt = Date.now();
-    recorderWin.webContents.send('recorder:start');
+    recorderWin.webContents.send('recorder:start', { silenceMs: settings.getSettings().silenceMs });
   }
   // während transcribing/polishing ignorieren
 }
@@ -195,10 +217,12 @@ ipcMain.handle('settings:load', () => {
     hasElevenLabsKey: s.hasElevenLabsKey,
     hasLlmApiKey: s.hasLlmApiKey,
     llmPolishEnabled: s.llmPolishEnabled,
+    silenceMs: s.silenceMs,
+    hotkey: s.hotkey,
   };
 });
 
-ipcMain.handle('settings:save', (_e, { elevenLabsKey, llmPolishEnabled, llmApiKey }) => {
+ipcMain.handle('settings:save', (_e, { elevenLabsKey, llmPolishEnabled, llmApiKey, silenceMs, hotkey }) => {
   const current = settings.getSettings();
   if (!elevenLabsKey && !current.hasElevenLabsKey) {
     return { ok: false, error: 'ElevenLabs-Key wird benötigt.' };
@@ -206,8 +230,26 @@ ipcMain.handle('settings:save', (_e, { elevenLabsKey, llmPolishEnabled, llmApiKe
   if (llmPolishEnabled && !llmApiKey && !current.hasLlmApiKey) {
     return { ok: false, error: 'KI-Politur aktiviert, aber kein Groq-Key eingegeben.' };
   }
-  settings.saveSettings({ elevenLabsKey, llmPolishEnabled, llmApiKey });
+
+  // Neuen Hotkey ZUERST testregistrieren, BEVOR er in die Config geschrieben wird —
+  // sonst wuerde ein von Windows blockierter Hotkey trotzdem gespeichert und beim
+  // naechsten Start (mit dann leerem registeredHotkey) erneut fehlschlagen: kein
+  // Hotkey mehr aktiv, obwohl vorher einer funktionierte.
+  let hotkeyToSave = current.hotkey;
+  let hotkeyError = null;
+  if (hotkey && hotkey !== current.hotkey) {
+    if (hotkey === registeredHotkey || globalShortcut.register(hotkey, toggleDictation)) {
+      if (registeredHotkey && registeredHotkey !== hotkey) globalShortcut.unregister(registeredHotkey);
+      registeredHotkey = hotkey;
+      hotkeyToSave = hotkey;
+    } else {
+      hotkeyError = `"${hotkey}" ist von Windows belegt — bisheriger Hotkey (${hotkeyLabel()}) bleibt aktiv.`;
+    }
+  }
+
+  settings.saveSettings({ elevenLabsKey, llmPolishEnabled, llmApiKey, silenceMs, hotkey: hotkeyToSave });
   updateTray();
+  if (hotkeyError) return { ok: false, error: `Restliche Einstellungen gespeichert, aber ${hotkeyError}` };
   return { ok: true };
 });
 
@@ -241,12 +283,7 @@ if (!gotTheLock) {
     createRecorderWindow();
 
     // Global Hotkey
-    const ok = globalShortcut.register(HOTKEY, toggleDictation);
-    if (!ok) {
-      setStatus('error', `Hotkey ${HOTKEY} konnte nicht registriert werden (von Windows belegt?)`);
-    } else {
-      console.log(`Hotkey registriert: ${HOTKEY}`);
-    }
+    registerHotkey();
 
     // Erststart ohne Key: Einstellungen direkt zeigen statt stumm zu warten.
     if (!settings.getSettings().hasElevenLabsKey) {
