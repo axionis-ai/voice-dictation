@@ -38,6 +38,15 @@ Settings are accessible any time via the tray icon or the status icon in the bot
 
 Tray context menu → **Test-Paste** inserts a test string (checks clipboard+paste without an API call).
 
+## Language
+
+Axionis Voice works in any language ElevenLabs Scribe supports — just speak, no configuration
+needed. The app doesn't lock recognition to one language: [ElevenLabs' `language_code` parameter
+is only a hint, not an enforced setting](https://elevenlabs.io/docs/api-reference/speech-to-text/convert) —
+without it, Scribe auto-detects the spoken language. Confirmed in practice speaking English and
+Spanish. AI polish (if enabled) uses a German prompt, so grammar cleanup is currently tuned for
+German text — the transcription itself is multilingual either way.
+
 ## Hotkey
 
 - Default `Win+Y`, toggle mode (1st press starts, 2nd stops) — freely changeable in settings (must include at least one modifier key like Ctrl/Alt/Shift/Win).
