@@ -132,7 +132,9 @@ function createRecorderWindow() {
 // das Tool aktiv/am Aufnehmen ist, Klick oeffnet die Einstellungen als zweiter Weg
 // neben dem Tray-Menue.
 function createWidgetWindow() {
-  const WIN_W = 190, WIN_H = 130, MARGIN = 12; // Hoehe/Breite geben Platz fuer den Hover-Tooltip oberhalb der Pille
+  // Fenster deutlich groesser als der sichtbare Inhalt (grosszuegiges CSS-Padding in
+  // widget.html) — sonst schneidet die Fensterkante weiche box-shadow/Glow-Raender hart ab.
+  const WIN_W = 220, WIN_H = 140, MARGIN = 12;
   const workArea = screen.getPrimaryDisplay().workArea;
   widgetWin = new BrowserWindow({
     width: WIN_W,

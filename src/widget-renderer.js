@@ -4,14 +4,14 @@
 const { ipcRenderer } = require('electron');
 
 const STATE_CLASSES = ['state-idle', 'state-needs-setup', 'state-recording', 'state-processing', 'state-error'];
-const tipStatusEl = document.getElementById('tipStatus');
+const pillEl = document.getElementById('pill');
 
-const TIP_TEXT = {
-  'state-idle': 'Bereit — Klick für Einstellungen',
-  'state-needs-setup': 'Einrichtung nötig — Klick zum Start',
-  'state-recording': 'Nimmt gerade auf …',
-  'state-processing': 'Verarbeite Diktat …',
-  'state-error': 'Fehler — Klick für Einstellungen',
+const TITLE_TEXT = {
+  'state-idle': 'Axionis Voice — Bereit',
+  'state-needs-setup': 'Axionis Voice — Einrichtung nötig',
+  'state-recording': 'Axionis Voice — Aufnahme läuft',
+  'state-processing': 'Axionis Voice — Verarbeite Diktat',
+  'state-error': 'Axionis Voice — Fehler',
 };
 
 function applyState({ state, hasElevenLabsKey }) {
@@ -22,11 +22,11 @@ function applyState({ state, hasElevenLabsKey }) {
   else if (state === 'error') cls = 'state-error';
   document.body.classList.remove(...STATE_CLASSES);
   document.body.classList.add(cls);
-  tipStatusEl.textContent = TIP_TEXT[cls];
+  pillEl.title = TITLE_TEXT[cls];
 }
 
 ipcRenderer.on('widget:state', (_e, payload) => applyState(payload));
 
-document.getElementById('pill').addEventListener('click', () => {
+pillEl.addEventListener('click', () => {
   ipcRenderer.send('widget:open-settings');
 });
