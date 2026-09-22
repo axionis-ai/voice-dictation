@@ -85,6 +85,9 @@
     box-sizing: border-box;
     overflow: hidden;
     z-index: 1;
+    /* Macht die Pille ziehbar (frameloses Fenster) — ein einfacher Klick (kaum Bewegung)
+       loest trotzdem noch den click-Handler unten aus, das unterscheidet Chromium selbst. */
+    -webkit-app-region: drag;
   }
   .pill:hover {
     transform: scale(1.07);

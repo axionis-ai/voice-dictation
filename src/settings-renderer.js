@@ -139,6 +139,12 @@ document.getElementById('closeBtn').addEventListener('click', () => {
   ipcRenderer.send('settings:close');
 });
 
+document.getElementById('resetWidgetPosBtn').addEventListener('click', async () => {
+  await ipcRenderer.invoke('widget:reset-position');
+  statusEl.textContent = 'Position zurückgesetzt ✓';
+  statusEl.style.color = '';
+});
+
 document.getElementById('saveBtn').addEventListener('click', async () => {
   const elevenLabsKey = elevenLabsKeyEl.value.trim();
   const llmPolishEnabled = polishEnabledEl.checked;

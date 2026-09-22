@@ -131,20 +131,42 @@ function createRecorderWindow() {
 // Immer sichtbares Status-Icon unten rechts (ueber der Taskleiste) — zeigt live, ob
 // das Tool aktiv/am Aufnehmen ist, Klick oeffnet die Einstellungen als zweiter Weg
 // neben dem Tray-Menue.
+const WIDGET_W = 190, WIDGET_H = 130, WIDGET_MARGIN = 12;
+
+// Liefert eine sinnvolle Fensterposition: gespeicherte Position, falls vorhanden UND
+// noch auf einem angeschlossenen Bildschirm sichtbar — sonst unten rechts (Standard).
+// Der Sichtbarkeits-Check verhindert ein "verlorenes" Icon, wenn seit dem letzten Mal
+// ein Monitor abgehaengt wurde.
+function widgetPosition() {
+  const s = settings.getSettings();
+  if (Number.isFinite(s.widgetX) && Number.isFinite(s.widgetY)) {
+    const onScreen = screen.getAllDisplays().some((d) => {
+      const a = d.workArea;
+      return s.widgetX >= a.x - WIDGET_W && s.widgetX <= a.x + a.width
+        && s.widgetY >= a.y - WIDGET_H && s.widgetY <= a.y + a.height;
+    });
+    if (onScreen) return { x: Math.round(s.widgetX), y: Math.round(s.widgetY) };
+  }
+  const workArea = screen.getPrimaryDisplay().workArea;
+  return {
+    x: workArea.x + workArea.width - WIDGET_W - WIDGET_MARGIN,
+    y: workArea.y + workArea.height - WIDGET_H - WIDGET_MARGIN,
+  };
+}
+
 function createWidgetWindow() {
   // Fenster deutlich groesser als der sichtbare Inhalt (grosszuegiges CSS-Padding in
   // widget.html) — sonst schneidet die Fensterkante weiche box-shadow/Glow-Raender hart ab.
-  const WIN_W = 190, WIN_H = 130, MARGIN = 12;
-  const workArea = screen.getPrimaryDisplay().workArea;
+  const pos = widgetPosition();
   widgetWin = new BrowserWindow({
-    width: WIN_W,
-    height: WIN_H,
-    x: workArea.x + workArea.width - WIN_W - MARGIN,
-    y: workArea.y + workArea.height - WIN_H - MARGIN,
+    width: WIDGET_W,
+    height: WIDGET_H,
+    x: pos.x,
+    y: pos.y,
     frame: false,
     transparent: true,
     resizable: false,
-    movable: false,
+    movable: true,
     alwaysOnTop: true,
     skipTaskbar: true,
     hasShadow: false,
@@ -156,6 +178,23 @@ function createWidgetWindow() {
   widgetWin.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
   widgetWin.loadFile(path.join(__dirname, 'widget.html'));
   widgetWin.on('closed', () => { widgetWin = null; });
+
+  // Position nach dem Ziehen speichern (entprellt — 'moved' feuert mehrfach waehrend
+  // des Ziehens auf Windows, nicht erst am Ende). Die ersten 1.5s nach dem Erzeugen
+  // ignorieren wir: Windows feuert direkt beim Erstellen selbst oft schon ein 'moved'
+  // (DPI-/Positions-Finalisierung) — das ist kein echtes Ziehen und wuerde sonst eine
+  // falsche/zufaellige Position dauerhaft speichern.
+  const createdAt = Date.now();
+  let saveTimer = null;
+  widgetWin.on('moved', () => {
+    if (Date.now() - createdAt < 1500) return;
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(() => {
+      if (!widgetWin) return;
+      const [x, y] = widgetWin.getPosition();
+      settings.saveSettings({ widgetX: x, widgetY: y });
+    }, 400);
+  });
 }
 
 function openSettingsWindow() {
@@ -308,6 +347,15 @@ ipcMain.on('settings:close', () => {
 });
 
 ipcMain.on('widget:open-settings', () => openSettingsWindow());
+
+ipcMain.handle('widget:reset-position', () => {
+  settings.saveSettings({ widgetX: null, widgetY: null });
+  if (widgetWin) {
+    const pos = widgetPosition();
+    widgetWin.setPosition(pos.x, pos.y);
+  }
+  return { ok: true };
+});
 
 // Single-Instance-Lock: verhindert, dass nach Restarts mehrere Electron-Instanzen
 // laufen (Hotkey klemmt sonst, weil nur die erste registriert ist und die anderen

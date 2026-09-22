@@ -66,13 +66,16 @@ function getSettings() {
     showWidget: raw.showWidget !== false, // Default an
     glossary: Array.isArray(raw.glossary) ? raw.glossary : [],
     maxRecordMs: Number.isFinite(raw.maxRecordMs) ? raw.maxRecordMs : DEFAULT_MAX_RECORD_MS,
+    // null = noch nie verschoben -> main.js setzt die Standardposition unten rechts.
+    widgetX: Number.isFinite(raw.widgetX) ? raw.widgetX : null,
+    widgetY: Number.isFinite(raw.widgetY) ? raw.widgetY : null,
   };
 }
 
 // Nur uebergebene Felder werden geaendert; leere/undefined Secret-Felder lassen den
 // bisherigen gespeicherten Wert unangetastet (Maske zeigt Secrets nie im Klartext an,
 // ein leeres Feld beim Speichern heisst also "unveraendert lassen", nicht "loeschen").
-function saveSettings({ elevenLabsKey, llmPolishEnabled, llmApiKey, silenceMs, hotkey, showWidget, glossary, maxRecordMs } = {}) {
+function saveSettings({ elevenLabsKey, llmPolishEnabled, llmApiKey, silenceMs, hotkey, showWidget, glossary, maxRecordMs, widgetX, widgetY } = {}) {
   const raw = readRaw();
   if (elevenLabsKey) raw.elevenLabsKey = encrypt(elevenLabsKey);
   if (llmApiKey) raw.llmApiKey = encrypt(llmApiKey);
@@ -82,6 +85,8 @@ function saveSettings({ elevenLabsKey, llmPolishEnabled, llmApiKey, silenceMs, h
   if (showWidget !== undefined) raw.showWidget = !!showWidget;
   if (Array.isArray(glossary)) raw.glossary = glossary;
   if (Number.isFinite(maxRecordMs)) raw.maxRecordMs = maxRecordMs;
+  if (widgetX === null && widgetY === null) { raw.widgetX = null; raw.widgetY = null; } // Position zuruecksetzen
+  else if (Number.isFinite(widgetX) && Number.isFinite(widgetY)) { raw.widgetX = widgetX; raw.widgetY = widgetY; }
   writeRaw(raw);
   return getSettings();
 }
