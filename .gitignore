@@ -1,0 +1,12 @@
+node_modules/
+dist/
+test_tone.wav
+*.log
+
+# Secrets/lokale Konfiguration — niemals committen
+.env
+config.json
+
+# Interne Session-Notizen, nicht Teil des öffentlichen Repos
+HANDOFF.md
+_archive/

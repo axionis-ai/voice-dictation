@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>Axionis Voice — Einstellungen</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --obsidian: #0E0F12;
+    --coal: #161720;
+    --coal-2: #1c1d28;
+    --ember: #FF5A36;
+    --ember-2: #ff7a52;
+    --ember-soft: rgba(255,90,54,0.12);
+    --ember-line: rgba(255,90,54,0.40);
+    --bone: #F1ECE3;
+    --bone-dim: #cfc8bd;
+    --ash: #8A8178;
+    --hair: rgba(241,236,227,0.10);
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: linear-gradient(160deg, var(--obsidian), var(--coal-2));
+    color: var(--bone);
+    font-family: 'Inter', system-ui, -apple-system, Segoe UI, sans-serif;
+    padding: 28px 32px;
+    -webkit-user-select: none;
+  }
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 22px;
+  }
+  .brand svg { width: 22px; height: 22px; }
+  .brand span {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 700;
+    font-size: 17px;
+    letter-spacing: 0.02em;
+  }
+  h1 {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--bone-dim);
+    margin: 0 0 4px;
+  }
+  p.hint {
+    color: var(--ash);
+    font-size: 12.5px;
+    line-height: 1.5;
+    margin: 0 0 18px;
+  }
+  p.hint a { color: var(--ember-2); }
+  label {
+    display: block;
+    font-size: 12.5px;
+    font-weight: 500;
+    color: var(--bone-dim);
+    margin-bottom: 6px;
+  }
+  input[type="password"], input[type="text"] {
+    width: 100%;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--hair);
+    border-radius: 8px;
+    color: var(--bone);
+    padding: 10px 12px;
+    font-size: 13.5px;
+    font-family: inherit;
+    outline: none;
+    transition: border-color .15s;
+  }
+  input:focus { border-color: var(--ember-line); }
+  input::placeholder { color: var(--ash); }
+  .field { margin-bottom: 16px; }
+  .checkbox-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 20px 0 4px;
+    cursor: pointer;
+  }
+  .checkbox-row input { width: auto; accent-color: var(--ember); }
+  .checkbox-row span { font-size: 13px; color: var(--bone); }
+  #polishFields { margin-top: 12px; display: none; }
+  #polishFields.show { display: block; }
+  .actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 26px;
+  }
+  button {
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    border-radius: 8px;
+    padding: 9px 18px;
+    cursor: pointer;
+    border: 1px solid transparent;
+  }
+  button.secondary {
+    background: transparent;
+    color: var(--bone-dim);
+    border-color: var(--hair);
+  }
+  button.primary {
+    background: var(--ember);
+    color: #1a0e08;
+  }
+  button.primary:hover { background: var(--ember-2); }
+  #status {
+    font-size: 12px;
+    color: var(--ember-2);
+    margin-top: 12px;
+    min-height: 16px;
+  }
+</style>
+</head>
+<body>
+  <div class="brand">
+    <svg viewBox="0 0 24 24" fill="#FF5A36" aria-hidden="true"><path d="M14.615 1.595a.75.75 0 0 1 .359.852L12.982 9.75h7.268a.75.75 0 0 1 .548 1.262l-10.5 11.25a.75.75 0 0 1-1.272-.71l1.992-7.302H3.75a.75.75 0 0 1-.548-1.262l10.5-11.25a.75.75 0 0 1 .913-.143Z"/></svg>
+    <span>AXIONIS VOICE</span>
+  </div>
+
+  <h1>ElevenLabs API-Key</h1>
+  <p class="hint">Pflicht — wird für die Spracherkennung gebraucht. Eigenen Key holen unter <a href="#" id="elevenLink">elevenlabs.io</a> (kostenloses Kontingent reicht zum Testen).</p>
+  <div class="field">
+    <label for="elevenLabsKey">API-Key</label>
+    <input type="password" id="elevenLabsKey" placeholder="xi-...">
+  </div>
+
+  <label class="checkbox-row">
+    <input type="checkbox" id="polishEnabled">
+    <span>KI-Politur aktivieren (verbessert Grammatik/Zeichensetzung via Groq, kostenlos)</span>
+  </label>
+  <div id="polishFields">
+    <p class="hint">Eigenen kostenlosen Key holen unter <a href="#" id="groqLink">console.groq.com</a>.</p>
+    <div class="field">
+      <label for="llmApiKey">Groq API-Key</label>
+      <input type="password" id="llmApiKey" placeholder="gsk_...">
+    </div>
+  </div>
+
+  <div id="status"></div>
+  <div class="actions">
+    <button class="secondary" id="closeBtn">Schließen</button>
+    <button class="primary" id="saveBtn">Speichern</button>
+  </div>
+
+  <script src="settings-renderer.js"></script>
+</body>
+</html>
