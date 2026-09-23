@@ -1,13 +1,18 @@
 // scribe.js — ElevenLabs Scribe Batch STT.
 // POST https://api.elevenlabs.io/v1/speech-to-text
-// multipart: file (audio), model_id=scribe_v1, language_code=de
+// multipart: file (audio), model_id=scribe_v1
 // Header: xi-api-key
 // Zero-dependency: multipart body von Hand als Buffer mit Boundary.
+//
+// language_code wird BEWUSST nicht gesendet: ohne den Parameter erkennt Scribe die
+// gesprochene Sprache selbst. Frueher stand hier fest 'de' — der Parameter ist bei
+// ElevenLabs allerdings nur ein Hinweis, keine Erzwingung, weshalb auch damals schon
+// Englisch/Spanisch korrekt erkannt wurden. Weglassen macht das Verhalten ehrlich und
+// nimmt dem Modell den Deutsch-Bias bei kurzen, mehrdeutigen Aeusserungen.
 const { getSettings } = require('./settings');
 
 const ENDPOINT = 'https://api.elevenlabs.io/v1/speech-to-text';
 const MODEL_ID = 'scribe_v1';
-const LANGUAGE_CODE = 'de'; // primär Deutsch; Scribe auto-detectet sonst
 
 function buildMultipart(fields, file) {
   // fields: { model_id, language_code, keyterms: [...] } ; file: { name, mime, buffer }
@@ -50,13 +55,13 @@ function sanitizeKeyterm(term) {
   return term.replace(/[<>{}[\]\\]/g, '').trim().slice(0, 50);
 }
 
-async function transcribe(audioBuffer, { ext = 'webm', mime = 'audio/webm', languageCode = LANGUAGE_CODE } = {}) {
+async function transcribe(audioBuffer, { ext = 'webm', mime = 'audio/webm' } = {}) {
   const key = getSettings().elevenLabsKey;
   if (!key) throw new Error('ElevenLabs-Key fehlt — in den Einstellungen eintragen');
   const glossary = (getSettings().glossary || []).map(sanitizeKeyterm).filter(Boolean);
 
   const { body, contentType } = buildMultipart(
-    { model_id: MODEL_ID, language_code: languageCode, keyterms: glossary.length ? glossary : undefined },
+    { model_id: MODEL_ID, keyterms: glossary.length ? glossary : undefined },
     { name: `dict.${ext}`, mime, buffer: audioBuffer }
   );
 
@@ -75,11 +80,13 @@ async function transcribe(audioBuffer, { ext = 'webm', mime = 'audio/webm', lang
   }
 
   const data = await res.json();
-  // Scribe-Antwort: { text, language_code, ... }
+  // Scribe-Antwort: { text, language_code, ... } — language_code ist die ERKANNTE
+  // Sprache und wird an die Politur weitergereicht, damit deren Prompt zur gesprochenen
+  // Sprache passt (statt wie frueher fest Deutsch anzunehmen).
   if (!data || typeof data.text !== 'string') {
     throw new Error(`Scribe-Antwort ohne text-Feld: ${JSON.stringify(data).slice(0, 300)}`);
   }
-  return data.text;
+  return { text: data.text, languageCode: data.language_code || null };
 }
 
 module.exports = { transcribe, ENDPOINT, MODEL_ID };

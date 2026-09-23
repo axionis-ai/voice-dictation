@@ -60,6 +60,10 @@ function startVAD() {
     let maxDev = 0;
     for (let i = 0; i < buf.length; i++) { const d = Math.abs(buf[i] - 128); if (d > maxDev) maxDev = d; }
     if (maxDev > peakDev) peakDev = maxDev;
+    // Rohpegel ans Status-Icon (ueber den Main-Prozess) — dort treibt er die Soundwave.
+    // Absichtlich derselbe 100ms-Takt wie die VAD-Auswertung: das erprobte Auto-Stop-
+    // Timing bleibt unangetastet, die Glaettung zwischen den Messpunkten macht CSS.
+    try { ipcRenderer.send('recorder:level', maxDev); } catch { /* ignore */ }
     if (maxDev > SPEECH_THRESHOLD) {
       if (!hasSpoken && Date.now() - recordStart > 0) {
         // Sprache erkannt - SILENCE scharf schalten nach MIN_SPEECH

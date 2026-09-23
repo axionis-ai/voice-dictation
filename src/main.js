@@ -25,7 +25,7 @@ let tray = null;
 let recorderWin = null;
 let settingsWin = null;
 let widgetWin = null;
-let state = 'idle'; // idle | recording | transcribing | error
+let state = 'idle'; // idle | recording | transcribing | polishing | success | error
 let lastError = '';
 const DOUBLE_TAP_MS = 500; // Doppelklick-Fenster für Feststelltaste (Lock-Modus)
 let recordingStartedAt = 0;
@@ -36,6 +36,20 @@ function setStatus(next, err) {
   if (err) lastError = err;
   updateTray();
   notifyWidget();
+}
+
+// Kurzer Erfolgs-Zustand direkt nach dem Einfuegen: das Status-Icon bestaetigt sichtbar,
+// dass der Text angekommen ist, statt wortlos auf Ruhe zurueckzuspringen. Danach zurueck
+// auf idle — aber nur, wenn inzwischen keine neue Aufnahme gestartet wurde (sonst wuerde
+// der Timer eine laufende Aufnahme faelschlich auf idle zuruecksetzen).
+const SUCCESS_MS = 900;
+let successTimer = null;
+function flashSuccess() {
+  setStatus('success');
+  clearTimeout(successTimer);
+  successTimer = setTimeout(() => {
+    if (state === 'success') setStatus('idle');
+  }, SUCCESS_MS);
 }
 
 // Schickt den aktuellen Status ans immer sichtbare Status-Icon (unten rechts) —
@@ -79,6 +93,7 @@ function stateLabel() {
       : `● REC — nochmal ${hotkeyLabel()} zum Stoppen`;
     case 'transcribing': return '… transkribiere (Scribe)';
     case 'polishing': return '… poliere (Groq)';
+    case 'success': return '✓ Text eingefügt';
     case 'error': return `⚠ Fehler: ${lastError}`;
     default: return `${hotkeyLabel()} = Diktat starten`;
   }
@@ -236,8 +251,9 @@ function toggleDictation() {
     // sonst: Stop -> transkribieren -> einfügen
     lockMode = false;
     recorderWin.webContents.send('recorder:stop');
-  } else if (state === 'idle' || state === 'error') {
-    // Start
+  } else if (state === 'idle' || state === 'error' || state === 'success') {
+    // Start — 'success' ist nur ein kurzer Bestaetigungs-Zustand nach dem Einfuegen und
+    // darf eine sofort folgende neue Aufnahme nicht blockieren.
     setStatus('recording');
     lockMode = false;
     recordingStartedAt = Date.now();
@@ -256,6 +272,13 @@ ipcMain.on('recorder:log', (_e, msg) => {
   console.log('[rend]', msg);
 });
 
+// Live-Lautstaerke vom VAD-Loop ans Status-Icon durchreichen, damit die Soundwave
+// waehrend der Aufnahme mit der echten Stimme atmet statt fest animiert zu laufen.
+// Bewusst ohne Logging: das feuert 10x pro Sekunde.
+ipcMain.on('recorder:level', (_e, level) => {
+  if (widgetWin) widgetWin.webContents.send('widget:level', level);
+});
+
 ipcMain.on('recorder:error', (_e, msg) => {
   console.error('[rend] FEHLER:', msg);
   setStatus('error', msg);
@@ -267,14 +290,16 @@ ipcMain.on('recorder:recording', async (_e, arrayBuffer, meta) => {
   try {
     const buf = Buffer.from(arrayBuffer);
     console.log(`[vd] buffer laenge=${buf.length}`);
-    let text = await scribe.transcribe(buf, { ext: meta.ext, mime: meta.mime });
-    console.log(`[vd] scribe rohtext laenge=${text.length} inhalt=${JSON.stringify(text.slice(0, 120))}`);
+    const scribed = await scribe.transcribe(buf, { ext: meta.ext, mime: meta.mime });
+    let text = scribed.text;
+    const languageCode = scribed.languageCode;
+    console.log(`[vd] scribe rohtext laenge=${text.length} sprache=${languageCode || '?'} inhalt=${JSON.stringify(text.slice(0, 120))}`);
     text = clean.cleanTranscript(text); // regelbasiert (kostenlos, instant)
     console.log(`[vd] clean laenge=${text.length}`);
     if (settings.getSettings().llmPolishEnabled) {
       setStatus('polishing');
       try {
-        text = await polish.polish(text, { timeoutMs: 8000 });
+        text = await polish.polish(text, { timeoutMs: 8000, languageCode });
         console.log(`[vd] polish laenge=${text.length}`);
       } catch (e) {
         // Politur fehlgeschlagen/Timeout -> regelbasiert bereinigter Text bleibt, Paste nicht blockieren.
@@ -286,7 +311,7 @@ ipcMain.on('recorder:recording', async (_e, arrayBuffer, meta) => {
     console.log(`[vd] voiceCommands laenge=${text.length} inhalt=${JSON.stringify(text.slice(0, 120))}`);
     await inserter.insert(text);
     console.log(`[vd] insert fertig`);
-    setStatus('idle');
+    flashSuccess();
   } catch (err) {
     console.error('[vd] PIPELINE-FEHLER:', err && err.stack ? err.stack : err);
     setStatus('error', err.message);

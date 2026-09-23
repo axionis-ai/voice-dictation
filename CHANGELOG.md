@@ -2,6 +2,14 @@
 
 All notable changes to Axionis Voice, newest first.
 
+## 0.10.0
+- **Real language auto-detection.** The app previously always sent `language_code=de` to ElevenLabs. Since that parameter is only a hint, other languages were still recognized — but the German bias is now gone entirely: the parameter is no longer sent at all, so Scribe detects the spoken language on its own.
+- **AI polish now follows the spoken language.** The polish prompt used to assume German, so dictating in English or Spanish got German grammar rules applied to foreign-language text. The language detected by Scribe is now passed to the polish step, which cleans up the text in that language and never translates. Verified live in German, English and Spanish — including that the anti-hijack protection still holds in each.
+- **Status icon expands symmetrically.** When recording starts, the circle now grows into the pill in both directions instead of only to the left.
+- **The soundwave reacts to your actual voice.** The bars used to be a fixed animation; they now scale with the live microphone level measured during recording.
+- **Softer state transitions.** Bolt and soundwave cross-fade into each other, and the processing ring fades in instead of popping.
+- **Visible confirmation after insertion.** A short ember pulse confirms the text was inserted, instead of the icon silently snapping back to idle.
+
 ## 0.9.1
 - **Fix:** clicking the status icon no longer opened settings (regression from 0.9.0 — `-webkit-app-region: drag` was also swallowing normal clicks on the same element). Dragging is now built manually via mousedown/mousemove/mouseup.
 - Status icon reduced in size by 25%.

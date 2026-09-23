@@ -41,11 +41,10 @@ Tray context menu → **Test-Paste** inserts a test string (checks clipboard+pas
 ## Language
 
 Axionis Voice works in any language ElevenLabs Scribe supports — just speak, no configuration
-needed. The app doesn't lock recognition to one language: [ElevenLabs' `language_code` parameter
-is only a hint, not an enforced setting](https://elevenlabs.io/docs/api-reference/speech-to-text/convert) —
-without it, Scribe auto-detects the spoken language. Confirmed in practice speaking English and
-Spanish. AI polish (if enabled) uses a German prompt, so grammar cleanup is currently tuned for
-German text — the transcription itself is multilingual either way.
+needed. No language is sent along with your audio, so [Scribe detects the spoken language
+itself](https://elevenlabs.io/docs/api-reference/speech-to-text/convert). AI polish follows suit:
+it cleans the text up in whichever language was detected and never translates it. Verified live
+in German, English and Spanish.
 
 ## Hotkey
 

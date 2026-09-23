@@ -29,7 +29,11 @@
   body {
     display: flex;
     align-items: flex-end;
-    justify-content: flex-end;
+    /* Horizontal zentriert (nicht mehr rechtsbuendig): so waechst die Pille beim Start
+       der Aufnahme symmetrisch nach links UND rechts aus der Kugel heraus, statt nur
+       nach links. Fensterbreite 120px, Aufnahme-Pille 81px — passt mit Rand fuer den
+       weichen Schatten. */
+    justify-content: center;
     /* Innenpolster, damit weiche box-shadow/Glow-Kanten nicht hart an der Fensterkante
        abgeschnitten werden. Bewusst knapp (nicht mehr 36px): die Pille sitzt unten
        rechts im Fenster, jedes zusaetzliche Pixel Polster ist beim Ziehen an den
@@ -64,6 +68,7 @@
     mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
     mask-composite: exclude;
     animation: beamspin 2s linear infinite;
+    transition: opacity .18s ease;
   }
   body.state-processing .halo { opacity: 1; }
   @keyframes beamspin { to { --beam-a: 360deg; } }
@@ -92,7 +97,7 @@
     border-color: var(--ember-line);
     box-shadow: 0 8px 20px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.06);
   }
-  .bolt { width: 14px; height: 14px; flex: none; }
+  .bolt { width: 14px; height: 14px; flex: none; transition: opacity .16s ease; }
   .bolt path { fill: var(--ember); transition: fill .2s; }
 
   /* Ruhezustand: dezenter Bolt */
@@ -109,9 +114,31 @@
   /* Aufnahme: Pille wird zum breiten Soundwave-Balken, Logo verschwindet komplett —
      das Logo ist nur zu sehen, wenn keine Aufnahme laeuft. */
   body.state-recording .pill { width: 81px; border-color: var(--ember-line); gap: 0; padding: 0 8px; }
-  body.state-recording .bolt { display: none; }
-  .wave { display: none; align-items: center; justify-content: center; gap: 2px; height: 22px; width: 100%; }
-  body.state-recording .wave { display: flex; }
+  body.state-recording .bolt { opacity: 0; }
+  /* Absolut positioniert (nicht im Fluss): so beansprucht die Wave im Ruhezustand
+     keinen Platz und laesst sich per Opacity weich mit dem Blitz kreuzen — display:none
+     liesse sich nicht ueberblenden.
+     --level ist der Live-Mikrofonpegel (siehe widget-renderer.js): die einzelnen Balken
+     laufen weiter fluessig ueber Keyframes, der ganze Block wird zusaetzlich mit der
+     echten Lautstaerke skaliert. Ergebnis: fluessige Bewegung MAL echter Pegel, ohne
+     dass die 100ms-Messschritte als Ruckeln sichtbar werden. */
+  .wave {
+    position: absolute;
+    left: 8px;
+    right: 8px;
+    top: 50%;
+    height: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    opacity: 0;
+    pointer-events: none;
+    transform-origin: center;
+    transform: translateY(-50%) scaleY(var(--level, .45));
+    transition: opacity .16s ease, transform .12s ease-out;
+  }
+  body.state-recording .wave { opacity: 1; }
   .wave span { display: block; width: 2px; border-radius: 2px; background: linear-gradient(180deg, var(--bone) 0%, var(--ember-2) 55%, var(--ember) 100%); transform-origin: center; animation: wave 1.1s ease-in-out infinite; }
   .wave span:nth-child(1){height:25%;animation-delay:-0.1s}
   .wave span:nth-child(2){height:50%;animation-delay:-0.7s}
@@ -123,6 +150,18 @@
   .wave span:nth-child(8){height:45%;animation-delay:-1.1s}
   .wave span:nth-child(9){height:30%;animation-delay:-0.5s}
   @keyframes wave { 0%, 100% { transform: scaleY(0.25); } 50% { transform: scaleY(1); } }
+
+  /* Erfolg: einmaliger Ember-Puls direkt nach dem Einfuegen — bestaetigt sichtbar,
+     dass der Text angekommen ist. Dauer passend zu SUCCESS_MS in main.js (900ms). */
+  body.state-success .pill {
+    border-color: var(--ember-line);
+    animation: success-pop .9s cubic-bezier(.16,1,.3,1) forwards;
+  }
+  @keyframes success-pop {
+    0%   { box-shadow: 0 6px 16px rgba(0,0,0,0.5), 0 0 0 0 var(--ember-glow); }
+    35%  { box-shadow: 0 6px 16px rgba(0,0,0,0.5), 0 0 0 7px rgba(255,90,54,0); }
+    100% { box-shadow: 0 6px 16px rgba(0,0,0,0.5), 0 0 0 0 rgba(255,90,54,0); }
+  }
 
   /* Fehler: dezenter Ring-Akzent */
   body.state-error .pill { border-color: rgba(255,138,138,0.55); }
