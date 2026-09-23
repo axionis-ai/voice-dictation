@@ -117,6 +117,36 @@ document.getElementById('siteLink').addEventListener('click', (e) => {
   shell.openExternal('https://axionisconsulting.com');
 });
 
+// Ersparnis-Anzeige. Bewusst die ehrliche Rechnung: reine Tippzeit MINUS der Zeit, die
+// das Diktieren selbst gekostet hat. Eine kleinere Zahl, die aber jeder Nachrechnung
+// standhaelt. 200 Anschlaege/Minute entsprechen fluessigem Tippen (~40 Woerter/Min.);
+// die Annahme steht mit im Text, damit die Zahl einzuordnen ist.
+const TYPING_CPM = 200;
+
+function formatDuration(ms) {
+  const totalMin = Math.round(ms / 60000);
+  if (totalMin < 1) return 'unter 1 min';
+  if (totalMin < 60) return `${totalMin} min`;
+  const h = Math.floor(totalMin / 60);
+  const m = totalMin % 60;
+  return m ? `${h} h ${m} min` : `${h} h`;
+}
+
+function renderStats(stats) {
+  const savedEl = document.getElementById('statsSaved');
+  const detailEl = document.getElementById('statsDetail');
+  if (!stats || !stats.dictations) return; // Startzustand steht schon im HTML
+
+  const typingMs = (stats.chars / TYPING_CPM) * 60000;
+  const savedMs = Math.max(0, typingMs - stats.recordedMs);
+  savedEl.textContent = formatDuration(savedMs);
+  detailEl.textContent =
+    `${stats.dictations} ${stats.dictations === 1 ? 'Diktat' : 'Diktate'}, `
+    + `${stats.chars.toLocaleString('de-DE')} Zeichen. Abtippen hätte rund `
+    + `${formatDuration(typingMs)} gedauert (bei 200 Anschlägen pro Minute), `
+    + `gesprochen hast du ${formatDuration(stats.recordedMs)}.`;
+}
+
 function updatePolishFieldsVisibility() {
   polishFieldsEl.classList.toggle('show', polishEnabledEl.checked);
 }
@@ -141,6 +171,8 @@ ipcRenderer.invoke('settings:load').then((s) => {
 
   showWidgetEl.checked = s.showWidget !== false;
   glossaryEl.value = (s.glossary || []).join(', ');
+
+  renderStats(s.stats);
 
   if (s.appVersion) document.getElementById('appVersion').textContent = `v${s.appVersion}`;
 });

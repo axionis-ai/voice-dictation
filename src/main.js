@@ -293,6 +293,10 @@ ipcMain.on('recorder:error', (_e, msg) => {
 
 ipcMain.on('recorder:recording', async (_e, arrayBuffer, meta) => {
   console.log(`[vd] recorder:recording eingangen bytes=${arrayBuffer && arrayBuffer.byteLength} meta=${JSON.stringify(meta)}`);
+  // Aufnahmedauer fuer die Ersparnis-Anzeige: Hotkey-Druck bis zum Eintreffen der Audio-
+  // Daten. Hier festhalten, BEVOR Transkription/Politur laufen — danach waere die Spanne
+  // um deren Verarbeitungszeit zu gross.
+  const recordedMs = recordingStartedAt ? Date.now() - recordingStartedAt : 0;
   setStatus('transcribing');
   try {
     const buf = Buffer.from(arrayBuffer);
@@ -318,6 +322,7 @@ ipcMain.on('recorder:recording', async (_e, arrayBuffer, meta) => {
     console.log(`[vd] voiceCommands laenge=${text.length} inhalt=${JSON.stringify(text.slice(0, 120))}`);
     await inserter.insert(text);
     console.log(`[vd] insert fertig`);
+    settings.addDictation({ chars: text.length, recordedMs });
     flashSuccess();
   } catch (err) {
     console.error('[vd] PIPELINE-FEHLER:', err && err.stack ? err.stack : err);
@@ -337,6 +342,7 @@ ipcMain.handle('settings:load', () => {
     hotkey: s.hotkey,
     showWidget: s.showWidget,
     glossary: s.glossary,
+    stats: s.stats,
     appVersion: app.getVersion(), // fuer die Versionsanzeige im Footer der Maske
   };
 });

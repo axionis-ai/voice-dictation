@@ -49,6 +49,32 @@ function decrypt(field) {
   }
 }
 
+// Nutzungszaehler fuer die Ersparnis-Anzeige in der Maske. Bleibt rein lokal in der
+// config.json — es gibt keinen Server, an den irgendetwas davon gehen koennte.
+function readStats(raw) {
+  const s = raw.stats || {};
+  return {
+    dictations: Number.isFinite(s.dictations) ? s.dictations : 0,
+    chars: Number.isFinite(s.chars) ? s.chars : 0,
+    recordedMs: Number.isFinite(s.recordedMs) ? s.recordedMs : 0,
+  };
+}
+
+// Bewusst eine eigene Funktion statt eines Feldes in saveSettings: hier wird
+// hochgezaehlt, nicht gesetzt. Ueber saveSettings muesste der Aufrufer erst lesen und
+// wuerde dabei einen zwischenzeitlichen Schreibvorgang ueberschreiben.
+function addDictation({ chars, recordedMs } = {}) {
+  const raw = readRaw();
+  const cur = readStats(raw);
+  raw.stats = {
+    dictations: cur.dictations + 1,
+    chars: cur.chars + (Number.isFinite(chars) && chars > 0 ? chars : 0),
+    recordedMs: cur.recordedMs + (Number.isFinite(recordedMs) && recordedMs > 0 ? recordedMs : 0),
+  };
+  writeRaw(raw);
+  return raw.stats;
+}
+
 function getSettings() {
   const raw = readRaw();
   const elevenLabsKey = decrypt(raw.elevenLabsKey);
@@ -69,6 +95,7 @@ function getSettings() {
     // null = noch nie verschoben -> main.js setzt die Standardposition unten rechts.
     widgetX: Number.isFinite(raw.widgetX) ? raw.widgetX : null,
     widgetY: Number.isFinite(raw.widgetY) ? raw.widgetY : null,
+    stats: readStats(raw),
   };
 }
 
@@ -91,4 +118,4 @@ function saveSettings({ elevenLabsKey, llmPolishEnabled, llmApiKey, silenceMs, h
   return getSettings();
 }
 
-module.exports = { getSettings, saveSettings, DEFAULT_LLM_BASE_URL, DEFAULT_LLM_MODEL, DEFAULT_SILENCE_MS, DEFAULT_HOTKEY, DEFAULT_MAX_RECORD_MS };
+module.exports = { getSettings, saveSettings, addDictation, DEFAULT_LLM_BASE_URL, DEFAULT_LLM_MODEL, DEFAULT_SILENCE_MS, DEFAULT_HOTKEY, DEFAULT_MAX_RECORD_MS };

@@ -2,6 +2,10 @@
 
 All notable changes to Axionis Voice, newest first.
 
+## 0.11.0
+- **Typing time saved** is now shown in the settings window: how many dictations and characters you've recorded, and how much typing that spared you. Counted **honestly** — the time you spent speaking is subtracted from the time typing would have taken (assuming 200 keystrokes/minute, stated in the app so the number can be judged).
+- The counters live only in your local config file. No telemetry, nothing is transmitted, we cannot see them.
+
 ## 0.10.1
 - Settings window now has a footer: what data goes where (in short), a link to the full privacy page, the website, and the running version number.
 - **Privacy page** at [axionisconsulting.com/voice/datenschutz](https://axionisconsulting.com/voice/datenschutz): exactly which data reaches ElevenLabs and Groq, their retention/training/location terms with sources, and what Axionis receives (nothing — there is no Axionis server involved).
