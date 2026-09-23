@@ -83,6 +83,15 @@ immediately fires a `moved` event (likely position/DPI finalization by the windo
 Without a safeguard, this gets incorrectly saved as "the user moved the window". Fix: ignore
 `moved` events for the first 1–2 seconds after the window is created.
 
+## 10. ElevenLabs `language_code` is a hint, and sending one costs you something
+
+Scribe's `language_code` parameter is not an enforced setting — passing `de` and then speaking
+English still yields correct English transcription, which makes a wrong value easy to miss for a
+long time. It isn't free, though: it biases recognition, which matters most on short or ambiguous
+utterances. If an app is meant to be multilingual, the right move is to omit the parameter
+entirely rather than pass a "primary" language, because omitting it is what actually enables
+detection instead of merely tolerating it.
+
 ## Process lesson: small screenshots lie
 
 Sizes/shapes were misjudged from tiny (~150×80px) screenshots more than once (e.g. a correctly

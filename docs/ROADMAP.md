@@ -31,11 +31,14 @@ need local estimation (track request count / rough token counts in `config.json`
 
 ## 4. Custom polish tone/style
 
-`polish.js`'s `SYSTEM_PROMPT` is fixed (cleanup only, German-tuned, anti-hijack hardened). Some
-users may want a lighter touch (minimal cleanup) or a stronger one (full rewrite/formalize). Add a
-"Polish style" dropdown in settings (e.g. Minimal / Standard / Formal) that swaps in a different
-system-prompt variant, keeping the `<dictation>` delimiter + anti-hijack instructions and the
-`MAX_GROWTH_RATIO` safety check unchanged in all variants — those exist for security, not style.
+The polish prompt is fixed at "clean up, don't rewrite". Some users may want a lighter touch
+(minimal cleanup) or a stronger one (formalize). Add a "Polish style" dropdown in settings (e.g.
+Minimal / Standard / Formal) that swaps in a different system-prompt variant, keeping the
+`<dictation>` delimiter + anti-hijack instructions and the `MAX_GROWTH_RATIO` safety check
+unchanged in all variants — those exist for security, not style.
+
+The language half of this item is **done as of 0.10.0**: the prompt is no longer German-only, it
+follows the language Scribe detected and never translates.
 
 ## 5. Code signing
 
@@ -54,12 +57,7 @@ not an increment.
 
 ## Explicitly considered and deferred
 
-- **Language-selection dropdown**: not needed. ElevenLabs Scribe auto-detects the spoken language
-  by default (confirmed both in the docs and live, speaking English/Spanish) — a manual language
-  picker would only add a setting nobody needs to touch. Worth revisiting only if auto-detection
-  turns out to misfire on a specific language pair in practice.
-- **Making `polish.js`'s prompt language-agnostic** (instead of German-tuned): low priority, but
-  a legitimate follow-up to the language auto-detection finding — right now if a non-German user
-  enables AI polish, grammar cleanup is still tuned for German phrasing. Could be folded into item
-  4 (style dropdown) by adding a "Language: auto/German/English/..." selector that adjusts the
-  prompt's target language instead of just its tone.
+- **Language-selection dropdown**: not needed. Scribe auto-detects the spoken language and, since
+  0.10.0, the app no longer sends a language hint at all — a manual picker would only add a setting
+  nobody needs to touch. Worth revisiting only if auto-detection turns out to misfire on a specific
+  language pair in practice.
