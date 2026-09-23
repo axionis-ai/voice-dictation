@@ -214,10 +214,17 @@ function createWidgetWindow() {
 
 function openSettingsWindow() {
   if (settingsWin) { settingsWin.show(); settingsWin.focus(); return; }
+  // Die Maske ist inhaltlich laenger als ein 1080p-Bildschirm hergibt (gemessen ~1430px
+  // Inhalt gegen ~820px nutzbare Hoehe), sie wird also ohnehin gescrollt. Deshalb die
+  // Wunschhoehe am tatsaechlichen Arbeitsbereich kappen statt einen Wert zu setzen, den
+  // Windows stillschweigend zurechtstutzt — und resizable lassen, damit auf grossen
+  // Bildschirmen mehr auf einmal sichtbar gemacht werden kann.
+  const desiredHeight = settings.getSettings().llmPolishEnabled ? 985 : 885;
+  const availableHeight = screen.getPrimaryDisplay().workArea.height - 40;
   settingsWin = new BrowserWindow({
     width: 420,
-    height: settings.getSettings().llmPolishEnabled ? 910 : 810,
-    resizable: false,
+    height: Math.min(desiredHeight, availableHeight),
+    resizable: true,
     title: `${APP_NAME} — Einstellungen`,
     icon: path.join(__dirname, 'icon.png'),
     autoHideMenuBar: true,
@@ -330,6 +337,7 @@ ipcMain.handle('settings:load', () => {
     hotkey: s.hotkey,
     showWidget: s.showWidget,
     glossary: s.glossary,
+    appVersion: app.getVersion(), // fuer die Versionsanzeige im Footer der Maske
   };
 });
 

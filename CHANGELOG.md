@@ -2,6 +2,11 @@
 
 All notable changes to Axionis Voice, newest first.
 
+## 0.10.1
+- Settings window now has a footer: what data goes where (in short), a link to the full privacy page, the website, and the running version number.
+- **Privacy page** at [axionisconsulting.com/voice/datenschutz](https://axionisconsulting.com/voice/datenschutz): exactly which data reaches ElevenLabs and Groq, their retention/training/location terms with sources, and what Axionis receives (nothing — there is no Axionis server involved).
+- Settings window is now resizable and no longer asks for more height than the screen actually offers.
+
 ## 0.10.0
 - **Real language auto-detection.** The app previously always sent `language_code=de` to ElevenLabs. Since that parameter is only a hint, other languages were still recognized — but the German bias is now gone entirely: the parameter is no longer sent at all, so Scribe detects the spoken language on its own.
 - **AI polish now follows the spoken language.** The polish prompt used to assume German, so dictating in English or Spanish got German grammar rules applied to foreign-language text. The language detected by Scribe is now passed to the polish step, which cleans up the text in that language and never translates. Verified live in German, English and Spanish — including that the anti-hijack protection still holds in each.

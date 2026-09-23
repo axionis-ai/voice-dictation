@@ -108,6 +108,14 @@ document.getElementById('groqLink').addEventListener('click', (e) => {
   e.preventDefault();
   shell.openExternal('https://console.groq.com/keys');
 });
+document.getElementById('privacyLink').addEventListener('click', (e) => {
+  e.preventDefault();
+  shell.openExternal('https://axionisconsulting.com/voice/datenschutz');
+});
+document.getElementById('siteLink').addEventListener('click', (e) => {
+  e.preventDefault();
+  shell.openExternal('https://axionisconsulting.com');
+});
 
 function updatePolishFieldsVisibility() {
   polishFieldsEl.classList.toggle('show', polishEnabledEl.checked);
@@ -133,6 +141,8 @@ ipcRenderer.invoke('settings:load').then((s) => {
 
   showWidgetEl.checked = s.showWidget !== false;
   glossaryEl.value = (s.glossary || []).join(', ');
+
+  if (s.appVersion) document.getElementById('appVersion').textContent = `v${s.appVersion}`;
 });
 
 document.getElementById('closeBtn').addEventListener('click', () => {
