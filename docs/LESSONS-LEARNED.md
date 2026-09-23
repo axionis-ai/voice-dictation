@@ -23,6 +23,15 @@ path string instead of the real API — `app`, `BrowserWindow`, `Tray`, `safeSto
 hard to distinguish from "Electron just isn't starting". Fix: `env -u ELECTRON_RUN_AS_NODE` before
 every launch when using an automated shell/CI environment for real GUI testing.
 
+**This applies to launching the *installed* app too, not just test runs.** It bit us a second time
+(2026-09-23) when starting the freshly installed app for the user via `Start-Process` from an
+automated shell: the variable was inherited, the app exited immediately, and the user was left
+with no running tool at all. Test scripts had the guard; the "just start the app" call did not.
+Strip the variable in *every* path that launches the binary — in PowerShell,
+`Remove-Item Env:ELECTRON_RUN_AS_NODE` before `Start-Process`. A normal launch by the user from
+the Start menu is never affected, which is exactly what makes this easy to misdiagnose as a
+broken build.
+
 ## 3. `app.getName()` returns different values in dev vs. packaged builds
 
 In dev mode (`electron .`), Electron uses the `name` field from `package.json` for the `userData`
