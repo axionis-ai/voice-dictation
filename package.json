@@ -1,7 +1,7 @@
 {
-  "name": "axionis-voice",
-  "productName": "Axionis Voice",
-  "version": "0.13.0",
+  "name": "axionis-dictate",
+  "productName": "Axionis Dictate",
+  "version": "0.14.0",
   "description": "Win+Y Diktat für Windows — ElevenLabs Scribe + optionale KI-Politur, fügt Text ins fokussierte Fenster ein",
   "main": "src/main.js",
   "author": "Axionis Consulting (https://axionisconsulting.com)",
@@ -15,8 +15,8 @@
     "electron-builder": "^25.0.0"
   },
   "build": {
-    "appId": "com.axionisconsulting.voice",
-    "productName": "Axionis Voice",
+    "appId": "com.axionisconsulting.dictate",
+    "productName": "Axionis Dictate",
     "win": {
       "target": [
         "nsis"

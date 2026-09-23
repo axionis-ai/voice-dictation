@@ -1,4 +1,4 @@
-# ⚡ Axionis Voice
+# ⚡ Axionis Dictate
 
 Free Windows dictation tool. Press `Win+Y` once to start recording, press it again to stop —
 the audio gets transcribed and the text is pasted directly into whatever window is currently
@@ -8,7 +8,7 @@ Built and given away for free by [Axionis Consulting](https://axionisconsulting.
 
 ## Installation
 
-1. Download the latest `Axionis Voice Setup.exe` from [Releases](../../releases).
+1. Download the latest `Axionis Dictate Setup.exe` from [Releases](../../releases).
 2. Run the installer. Windows SmartScreen may warn ("Unknown publisher") on first launch — that's normal for free, unsigned software. Click **"More info"** → **"Run anyway"**.
 3. On the very first start, a settings window opens automatically.
 
@@ -18,7 +18,7 @@ The tool uses [ElevenLabs Scribe](https://elevenlabs.io) for speech recognition 
 
 1. Sign up via [try.elevenlabs.io](https://try.elevenlabs.io/2igpd7r1n610) (the free tier is enough to try it out — this is an Axionis Consulting affiliate link, it costs you nothing extra).
 2. Get your API key under *Settings → API Keys*.
-3. Enter the key in the Axionis Voice settings window and save.
+3. Enter the key in the Axionis Dictate settings window and save.
 
 Optional: **AI polish** automatically improves grammar/punctuation — enter a free [Groq](https://console.groq.com/keys) key for that. Your keys are stored only locally and encrypted (Windows' own encryption, tied to your user account) on your machine — they never leave your device except directly to ElevenLabs/Groq.
 
@@ -40,7 +40,7 @@ Tray context menu → **Test-Paste** inserts a test string (checks clipboard+pas
 
 ## Language
 
-Axionis Voice works in any language ElevenLabs Scribe supports — just speak, no configuration
+Axionis Dictate works in any language ElevenLabs Scribe supports — just speak, no configuration
 needed. No language is sent along with your audio, so [Scribe detects the spoken language
 itself](https://elevenlabs.io/docs/api-reference/speech-to-text/convert). AI polish follows suit:
 it cleans the text up in whichever language was detected and never translates it. Verified live
@@ -72,7 +72,7 @@ git clone https://github.com/axionis-ai/voice-dictation.git
 cd voice-dictation
 npm install
 npm start          # development mode
-npm run dist       # builds dist/Axionis Voice Setup *.exe
+npm run dist       # builds dist/Axionis Dictate Setup *.exe
 ```
 
 ## More docs

@@ -17,7 +17,37 @@ function configPath() {
   return path.join(app.getPath('userData'), 'config.json');
 }
 
+// Bis 0.13.0 hiess das Produkt "Axionis Voice" (der Name ist jetzt der Sparte vorbehalten,
+// unter der auch kuenftige Voice-/Telefon-Agenten laufen). Electron leitet den
+// userData-Ordner aus productName ab — ohne diese Uebernahme wuerde die umbenannte App in
+// einem leeren Ordner starten: API-Keys, Hotkey, Glossar und Ersparnis-Zaehler waeren
+// scheinbar weg, obwohl die Datei noch daneben liegt.
+// Die verschluesselten Keys bleiben lesbar, weil safeStorage/DPAPI an das Windows-Konto
+// gebunden ist und nicht an den Pfad.
+const LEGACY_APP_NAME = 'Axionis Voice';
+let legacyCheckDone = false;
+
+function migrateLegacyConfig() {
+  const target = configPath();
+  if (fs.existsSync(target)) return; // schon eine eigene Config da -> nichts zu tun
+  try {
+    const legacy = path.join(path.dirname(app.getPath('userData')), LEGACY_APP_NAME, 'config.json');
+    if (!fs.existsSync(legacy)) return;
+    fs.mkdirSync(path.dirname(target), { recursive: true });
+    fs.copyFileSync(legacy, target);
+    console.log(`[settings] Konfiguration aus "${LEGACY_APP_NAME}" uebernommen.`);
+  } catch (e) {
+    // Fehlschlag darf den Start nicht verhindern — dann steht der Nutzer eben vor der
+    // Ersteinrichtung, statt vor einer kaputten App.
+    console.error('[settings] Uebernahme der alten Konfiguration fehlgeschlagen:', e && e.message);
+  }
+}
+
 function readRaw() {
+  if (!legacyCheckDone) {
+    legacyCheckDone = true;
+    migrateLegacyConfig();
+  }
   try {
     return JSON.parse(fs.readFileSync(configPath(), 'utf8'));
   } catch {

@@ -1,10 +1,10 @@
-# Architecture — Axionis Voice
+# Architecture — Axionis Dictate
 
 Internal technical documentation. For usage instructions, see [README.md](../README.md).
 
 ## Overview
 
-Axionis Voice is an Electron tray app for Windows (no backend, no server, no Axionis-owned
+Axionis Dictate is an Electron tray app for Windows (no backend, no server, no Axionis-owned
 infrastructure involved beyond the NSIS installer for distribution). It runs entirely locally and
 only talks to two external APIs: ElevenLabs (speech-to-text) and, optionally, Groq (LLM text
 polishing).
@@ -60,7 +60,7 @@ mode).
 ## Configuration (`settings.js`)
 
 The single source of truth for user settings. Storage location: `app.getPath('userData')/config.json`
-(Windows: `%AppData%\Axionis Voice\config.json`). Important: `app.setName('Axionis Voice')` is set
+(Windows: `%AppData%\Axionis Dictate\config.json`). Important: `app.setName('Axionis Dictate')` is set
 explicitly in main.js, because Electron uses the `name` field from package.json for the userData
 path in **dev mode** (`electron .`), but `productName` in the **packaged** app — without that
 `setName()` call, the dev build and the installed build would read/write to two different folders

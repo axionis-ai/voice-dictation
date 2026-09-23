@@ -7,12 +7,12 @@ const STATE_CLASSES = ['state-idle', 'state-needs-setup', 'state-recording', 'st
 const pillEl = document.getElementById('pill');
 
 const TITLE_TEXT = {
-  'state-idle': 'Axionis Voice — Bereit',
-  'state-needs-setup': 'Axionis Voice — Einrichtung nötig',
-  'state-recording': 'Axionis Voice — Aufnahme läuft',
-  'state-processing': 'Axionis Voice — Verarbeite Diktat',
-  'state-success': 'Axionis Voice — Text eingefügt',
-  'state-error': 'Axionis Voice — Fehler',
+  'state-idle': 'Axionis Dictate — Bereit',
+  'state-needs-setup': 'Axionis Dictate — Einrichtung nötig',
+  'state-recording': 'Axionis Dictate — Aufnahme läuft',
+  'state-processing': 'Axionis Dictate — Verarbeite Diktat',
+  'state-success': 'Axionis Dictate — Text eingefügt',
+  'state-error': 'Axionis Dictate — Fehler',
 };
 
 function applyState({ state, hasElevenLabsKey }) {

@@ -1,6 +1,11 @@
 # Changelog
 
-All notable changes to Axionis Voice, newest first.
+All notable changes to Axionis Dictate, newest first.
+
+## 0.14.0
+- **Renamed from "Axionis Voice" to "Axionis Dictate".** *Axionis Voice* is the name of the product line covering everything speech-related — voice agents and phone agents are planned under it — so the dictation tool needed its own name rather than occupying the umbrella.
+- Your settings carry over automatically. The rename moves the config folder (Electron derives it from the product name), so on first start the app picks up the previous folder's config — API keys, hotkey, glossary and the saved-time counter all survive.
+- Entries below this line still describe the same tool under its old name.
 
 ## 0.13.0
 - **Automatic update check.** The app now checks GitHub for a newer version shortly after starting (and every 6 hours, since it often runs for days via autostart). A new version downloads quietly in the background; once it's ready, a brief Windows notification says so and the tray menu gains an entry **"Update auf vX.Y.Z — jetzt installieren"**.

@@ -14,7 +14,7 @@ const voiceCommands = require('./voiceCommands');
 const settings = require('./settings');
 const autostart = require('./autostart');
 
-const APP_NAME = 'Axionis Voice';
+const APP_NAME = 'Axionis Dictate';
 // Erzwingt denselben app-Namen (und damit denselben userData-Ordner fuer settings.js)
 // im Dev-Betrieb (electron . liest sonst package.json "name", nicht "build.productName")
 // wie in der gebauten/installierten App — sonst landet die Config je nach Startart in
@@ -111,7 +111,7 @@ autoUpdater.on('update-downloaded', (info) => {
   // Installation noch gar nicht moeglich und der Hinweis liefe ins Leere.
   if (Notification.isSupported()) {
     new Notification({
-      title: `Axionis Voice ${availableUpdate} ist bereit`,
+      title: `Axionis Dictate ${availableUpdate} ist bereit`,
       body: 'Zum Installieren auf das Symbol in der Taskleiste klicken.',
       silent: true,
     }).show();
@@ -173,7 +173,7 @@ function updateTray() {
     {
       label: 'Test-Paste (Clipboard "Test")',
       click: async () => {
-        try { await inserter.insert('Axionis-Voice-Test ✓'); } catch (e) { setStatus('error', e.message); }
+        try { await inserter.insert('Axionis-Dictate-Test ✓'); } catch (e) { setStatus('error', e.message); }
       },
     },
     { type: 'separator' },
