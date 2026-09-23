@@ -7,9 +7,21 @@ enough to start directly; no further discovery should be needed before writing c
 
 Right now every new version requires manually downloading and rerunning the installer. Add
 `electron-updater` + a GitHub Releases provider (`electron-builder.yml` → `publish: { provider:
-github, owner: axionis-ai, repo: voice-dictation }`), check on startup, prompt before installing.
-Needs code signing to avoid a fresh SmartScreen warning on every auto-update — evaluate cost vs.
-benefit (see item 5 below, they overlap).
+github, owner: axionis-ai, repo: voice-dictation }`) and check on startup.
+
+**Agreed UX (decided 2026-09-23) — quiet, never blocking:**
+
+1. Check silently on startup. If there's nothing new, the user never notices anything.
+2. If an update exists, show a **brief, self-dismissing notice** ("Update available") — it appears,
+   it goes away on its own, it never steals focus or interrupts dictation.
+3. The durable affordance lives in the **tray menu**: an entry like "Update to v0.11.0 — install
+   now". That stays until it's used, so a missed notice costs nothing.
+4. Installing is always an explicit click. Never install silently underneath the user.
+
+**Blocked on item 5 (code signing):** every update is an unsigned .exe. Before shipping this to
+customers, verify what Windows actually does when electron-updater launches the downloaded
+installer — an update that surprises a customer with an "Unknown publisher" warning costs more
+trust than it gains. Test this first, don't assume either outcome.
 
 ## 2. Realtime/streaming transcription
 
