@@ -2,6 +2,11 @@
 
 All notable changes to Axionis Voice, newest first.
 
+## 0.12.0
+- **Guided first run.** On the very first start (no key stored yet), the settings window now opens with a clear notice that the tool cannot do anything without an ElevenLabs key, plus a 4-step walkthrough of exactly where to get one — sign up, profile picture → API Keys → "Create API Key", paste, save. It disappears once a key is stored.
+- The Groq hint now names the exact click path too, instead of just linking to the site.
+- Website: the setup section now explains where both keys come from, and that they stay encrypted on your own machine.
+
 ## 0.11.0
 - **Typing time saved** is now shown in the settings window: how many dictations and characters you've recorded, and how much typing that spared you. Counted **honestly** — the time you spent speaking is subtracted from the time typing would have taken (assuming 200 keystrokes/minute, stated in the app so the number can be judged).
 - The counters live only in your local config file. No telemetry, nothing is transmitted, we cannot see them.

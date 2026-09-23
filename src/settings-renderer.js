@@ -108,6 +108,10 @@ document.getElementById('groqLink').addEventListener('click', (e) => {
   e.preventDefault();
   shell.openExternal('https://console.groq.com/keys');
 });
+document.getElementById('firstRunElevenLink').addEventListener('click', (e) => {
+  e.preventDefault();
+  shell.openExternal('https://try.elevenlabs.io/2igpd7r1n610');
+});
 document.getElementById('privacyLink').addEventListener('click', (e) => {
   e.preventDefault();
   shell.openExternal('https://axionisconsulting.com/voice/datenschutz');
@@ -153,6 +157,9 @@ function updatePolishFieldsVisibility() {
 polishEnabledEl.addEventListener('change', updatePolishFieldsVisibility);
 
 ipcRenderer.invoke('settings:load').then((s) => {
+  // Erstnutzer-Anleitung nur zeigen, solange wirklich kein Key hinterlegt ist.
+  if (!s.hasElevenLabsKey) document.getElementById('firstRun').hidden = false;
+
   elevenLabsKeyEl.placeholder = s.hasElevenLabsKey ? '•••• bereits gespeichert — zum Ändern neu eingeben' : 'xi-...';
   polishEnabledEl.checked = !!s.llmPolishEnabled;
   llmApiKeyEl.placeholder = s.hasLlmApiKey ? '•••• bereits gespeichert — zum Ändern neu eingeben' : 'gsk_...';

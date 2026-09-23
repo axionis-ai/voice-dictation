@@ -160,6 +160,27 @@
     border-color: var(--ember-line);
     color: var(--ember-2);
   }
+  /* Erstnutzer-Block: nur sichtbar, solange kein ElevenLabs-Key hinterlegt ist. Ohne den
+     Key kann das Tool gar nichts — das muss beim ersten Oeffnen sofort klar sein, statt
+     dass jemand vor unbeschrifteten Feldern sitzt. */
+  .firstrun {
+    border: 1px solid rgba(255,90,54,0.35);
+    background: rgba(255,90,54,0.07);
+    border-radius: 10px;
+    padding: 16px 18px;
+    margin-bottom: 22px;
+  }
+  .firstrun h2 {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    margin: 0 0 8px;
+    color: var(--bone);
+  }
+  .firstrun p { font-size: 12.5px; line-height: 1.55; color: var(--bone-dim); margin: 0 0 10px; }
+  .firstrun ol { margin: 0; padding-left: 18px; font-size: 12.5px; line-height: 1.6; color: var(--bone-dim); }
+  .firstrun li { margin-bottom: 5px; }
+  .firstrun a { color: var(--ember-2); }
   .footer {
     border-top: 1px solid var(--hair);
     margin-top: 26px;
@@ -196,6 +217,17 @@
     <span>AXIONIS VOICE</span>
   </div>
 
+  <div class="firstrun" id="firstRun" hidden>
+    <h2>Noch ein Schritt, dann kann's losgehen</h2>
+    <p>Axionis Voice braucht einen eigenen Zugangsschlüssel für die Spracherkennung — <strong>ohne ihn passiert beim Drücken des Hotkeys nichts.</strong> Das Konto ist kostenlos, das Freikontingent reicht zum Ausprobieren.</p>
+    <ol>
+      <li><a href="#" id="firstRunElevenLink">Bei ElevenLabs anmelden</a> (E-Mail genügt).</li>
+      <li>Oben rechts auf dein <strong>Profilbild</strong> klicken → <strong>API Keys</strong>.</li>
+      <li>Auf <strong>„Create API Key"</strong> klicken, Namen vergeben, Schlüssel kopieren.</li>
+      <li>Hier unten in das Feld einfügen und auf <strong>Speichern</strong> klicken.</li>
+    </ol>
+  </div>
+
   <h1>ElevenLabs API-Key</h1>
   <p class="hint">Pflicht — wird für die Spracherkennung gebraucht. Eigenen Key holen unter <a href="#" id="elevenLink">elevenlabs.io</a> (kostenloses Kontingent reicht zum Testen).</p>
   <div class="field">
@@ -208,7 +240,7 @@
     <span>KI-Politur aktivieren (verbessert Grammatik/Zeichensetzung via Groq, kostenlos)</span>
   </label>
   <div id="polishFields">
-    <p class="hint">Eigenen kostenlosen Key holen unter <a href="#" id="groqLink">console.groq.com</a>.</p>
+    <p class="hint">Ebenfalls kostenlos: bei <a href="#" id="groqLink">console.groq.com</a> anmelden, dort im Menü auf <strong>API Keys</strong> → <strong>„Create API Key"</strong>, Schlüssel kopieren und hier einfügen.</p>
     <div class="field">
       <label for="llmApiKey">Groq API-Key</label>
       <input type="password" id="llmApiKey" placeholder="gsk_...">
