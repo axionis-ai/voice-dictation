@@ -2,6 +2,11 @@
 
 All notable changes to Axionis Voice, newest first.
 
+## 0.13.0
+- **Automatic update check.** The app now checks GitHub for a newer version shortly after starting (and every 6 hours, since it often runs for days via autostart). A new version downloads quietly in the background; once it's ready, a brief Windows notification says so and the tray menu gains an entry **"Update auf vX.Y.Z — jetzt installieren"**.
+- Nothing installs without your click, and nothing is installed silently on quit. A failed check (no connection, GitHub unreachable) is ignored — it must never interrupt dictation.
+- Note: this only works **from this version onward**. An older installation cannot know about updates, because the checking code is what's new here.
+
 ## 0.12.0
 - **Guided first run.** On the very first start (no key stored yet), the settings window now opens with a clear notice that the tool cannot do anything without an ElevenLabs key, plus a 4-step walkthrough of exactly where to get one — sign up, profile picture → API Keys → "Create API Key", paste, save. It disappears once a key is stored.
 - The Groq hint now names the exact click path too, instead of just linking to the site.

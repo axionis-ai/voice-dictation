@@ -4,7 +4,7 @@
 // - hidden BrowserWindow für Recorder (getUserMedia + MediaRecorder)
 // - IPC: recorder:recording -> scribe.transcribe -> inserter.insert
 // - Einstellungsfenster für ElevenLabs-/Groq-Key (ersetzt .env)
-const { app, BrowserWindow, Tray, Menu, globalShortcut, ipcMain, nativeImage, screen } = require('electron');
+const { app, BrowserWindow, Tray, Menu, globalShortcut, ipcMain, nativeImage, screen, Notification } = require('electron');
 const path = require('path');
 const scribe = require('./scribe');
 const inserter = require('./inserter');
@@ -85,6 +85,52 @@ function registerHotkey() {
   return true;
 }
 
+// --- Auto-Update (electron-updater gegen GitHub Releases) ---
+// Bewusst zurueckhaltend: still pruefen, EINMAL kurz per System-Benachrichtigung Bescheid
+// geben und den dauerhaften Weg ins Tray-Menue legen. Nie ungefragt installieren, nie ein
+// Fenster in den Vordergrund draengen — das Tool wuerde sonst mitten im Diktieren stoeren.
+const { autoUpdater } = require('electron-updater');
+const UPDATE_CHECK_INTERVAL_MS = 6 * 60 * 60 * 1000; // falls die App tagelang durchlaeuft
+let availableUpdate = null; // Versionsnummer, sobald eine neuere gefunden wurde
+let updateReady = false;    // true = fertig heruntergeladen, Installation per Klick moeglich
+
+autoUpdater.autoDownload = true;
+// Beim Beenden NICHT heimlich installieren — die Installation passiert nur auf Klick.
+autoUpdater.autoInstallOnAppQuit = false;
+
+autoUpdater.on('update-available', (info) => {
+  availableUpdate = (info && info.version) || null;
+  updateTray(); // Menue zeigt "wird geladen", der Eintrag zum Installieren kommt erst danach
+});
+
+autoUpdater.on('update-downloaded', (info) => {
+  availableUpdate = (info && info.version) || availableUpdate;
+  updateReady = true;
+  updateTray();
+  // Erst JETZT benachrichtigen, nicht schon bei 'update-available': vorher waere die
+  // Installation noch gar nicht moeglich und der Hinweis liefe ins Leere.
+  if (Notification.isSupported()) {
+    new Notification({
+      title: `Axionis Voice ${availableUpdate} ist bereit`,
+      body: 'Zum Installieren auf das Symbol in der Taskleiste klicken.',
+      silent: true,
+    }).show();
+  }
+});
+
+// Ein fehlgeschlagener Update-Check (kein Netz, GitHub down) darf das Diktieren niemals
+// stoeren — nur protokollieren, sonst passiert nichts.
+autoUpdater.on('error', (err) => {
+  console.error('[update] Pruefung fehlgeschlagen:', (err && err.message) || err);
+});
+
+function checkForUpdates() {
+  if (!app.isPackaged) return; // im Dev-Betrieb gibt es kein Release zum Vergleichen
+  autoUpdater.checkForUpdates().catch((e) => {
+    console.error('[update] checkForUpdates:', (e && e.message) || e);
+  });
+}
+
 function stateLabel() {
   if (!settings.getSettings().hasElevenLabsKey) return 'Nicht eingerichtet — Klick für Einstellungen';
   switch (state) {
@@ -102,7 +148,23 @@ function stateLabel() {
 function updateTray() {
   if (!tray) return;
   tray.setToolTip(`${APP_NAME} — ${stateLabel()}`);
+
+  // Update-Hinweis ganz oben, damit er auffaellt — aber nur als anklickbarer Eintrag,
+  // wenn das Paket auch wirklich schon heruntergeladen ist.
+  const updateItems = [];
+  if (updateReady) {
+    updateItems.push({
+      label: `Update auf ${availableUpdate} — jetzt installieren`,
+      click: () => autoUpdater.quitAndInstall(),
+    });
+    updateItems.push({ type: 'separator' });
+  } else if (availableUpdate) {
+    updateItems.push({ label: `Update ${availableUpdate} wird geladen...`, enabled: false });
+    updateItems.push({ type: 'separator' });
+  }
+
   const menu = Menu.buildFromTemplate([
+    ...updateItems,
     { label: stateLabel(), enabled: false },
     { type: 'separator' },
     { label: `Hotkey: ${hotkeyLabel()}`, enabled: false },
@@ -447,6 +509,12 @@ if (!gotTheLock) {
     if (!settings.getSettings().hasElevenLabsKey) {
       openSettingsWindow();
     }
+
+    // Update-Pruefung verzoegert, damit sie den Start nicht ausbremst; danach in Ruhe
+    // wiederholen, weil die App per Autostart oft wochenlang durchlaeuft und sonst nie
+    // wieder nachsehen wuerde.
+    setTimeout(checkForUpdates, 8000);
+    setInterval(checkForUpdates, UPDATE_CHECK_INTERVAL_MS);
   });
 
   app.on('will-quit', () => {
