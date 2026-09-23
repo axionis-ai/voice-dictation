@@ -2,6 +2,10 @@
 
 All notable changes to Axionis Dictate, newest first.
 
+## 0.15.0
+- **Fix: the status icon could silently fall behind other windows.** It is set to stay on top, but on Windows that flag gets dropped when other programs reorder windows — the icon never takes focus, so nothing restores it. Observed live: window visible, topmost flag gone. It is now re-asserted every 10 seconds.
+- **New default position: horizontally centred, just above the taskbar.** It used to sit bottom-right, in the notification area, where Windows toasts regularly covered it. Existing positions are kept — use "Position zurücksetzen" in settings to move to the new default.
+
 ## 0.14.1
 - Placeholder in the key fields shortened so it stops being cut off ("•••• gespeichert — zum Ändern neu eingeben").
 - Website screenshot retaken: it still showed the old name and the pre-0.10.1 window.

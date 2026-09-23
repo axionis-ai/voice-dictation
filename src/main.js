@@ -205,13 +205,12 @@ function createRecorderWindow() {
   recorderWin.loadFile(path.join(__dirname, 'recorder.html'));
 }
 
-// Immer sichtbares Status-Icon unten rechts (ueber der Taskleiste) — zeigt live, ob
-// das Tool aktiv/am Aufnehmen ist, Klick oeffnet die Einstellungen als zweiter Weg
-// neben dem Tray-Menue.
+// Immer sichtbares Status-Icon — zeigt live, ob das Tool aktiv/am Aufnehmen ist,
+// Klick oeffnet die Einstellungen als zweiter Weg neben dem Tray-Menue.
 const WIDGET_W = 120, WIDGET_H = 76, WIDGET_MARGIN = 12;
 
 // Liefert eine sinnvolle Fensterposition: gespeicherte Position, falls vorhanden UND
-// noch auf einem angeschlossenen Bildschirm sichtbar — sonst unten rechts (Standard).
+// noch auf einem angeschlossenen Bildschirm sichtbar — sonst die Standardposition.
 // Der Sichtbarkeits-Check verhindert ein "verlorenes" Icon, wenn seit dem letzten Mal
 // ein Monitor abgehaengt wurde.
 function widgetPosition() {
@@ -224,9 +223,12 @@ function widgetPosition() {
     });
     if (onScreen) return { x: Math.round(s.widgetX), y: Math.round(s.widgetY) };
   }
+  // Standard seit 0.15.0: horizontal mittig, knapp ueber der Taskleiste. Vorher unten
+  // rechts — dort lag es im Infobereich, wo Windows-Benachrichtigungen aufpoppen und es
+  // regelmaessig verdeckt haben.
   const workArea = screen.getPrimaryDisplay().workArea;
   return {
-    x: workArea.x + workArea.width - WIDGET_W - WIDGET_MARGIN,
+    x: workArea.x + Math.round((workArea.width - WIDGET_W) / 2),
     y: workArea.y + workArea.height - WIDGET_H - WIDGET_MARGIN,
   };
 }
@@ -253,8 +255,26 @@ function createWidgetWindow() {
     },
   });
   widgetWin.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+  // Das alwaysOnTop aus den Fensteroptionen allein haelt auf Windows nicht durch: das
+  // Icon bekommt nie den Fokus, und sobald andere Programme die Fensterreihenfolge
+  // anfassen, faellt es still nach hinten (live beobachtet — Fenster sichtbar, aber
+  // TOPMOST-Flag weg). Deshalb explizit auf der hoechsten Stufe setzen und regelmaessig
+  // nachfassen; kostet praktisch nichts und ist die einzige Variante, die haelt.
+  widgetWin.setAlwaysOnTop(true, 'screen-saver');
   widgetWin.loadFile(path.join(__dirname, 'widget.html'));
-  widgetWin.on('closed', () => { widgetWin = null; });
+
+  // Bewusst OHNE isAlwaysOnTop()-Abfrage: die liefert nur Electrons interne Annahme.
+  // Entfernt Windows das Flag von aussen, weiss Electron davon nichts und meldet weiter
+  // "true" — die Pruefung wuerde also ausgerechnet im Fehlerfall nicht anschlagen.
+  // Deshalb unbedingt neu setzen. moveTop() erzwingt zusaetzlich einen echten
+  // Windows-Aufruf zur Fensterreihenfolge; beides klaut keinen Fokus.
+  const keepOnTop = setInterval(() => {
+    if (!widgetWin || widgetWin.isDestroyed()) return;
+    widgetWin.setAlwaysOnTop(true, 'screen-saver');
+    widgetWin.moveTop();
+  }, 10000);
+
+  widgetWin.on('closed', () => { clearInterval(keepOnTop); widgetWin = null; });
 
   // Position nach dem Ziehen speichern (entprellt — 'moved' feuert mehrfach waehrend
   // des Ziehens auf Windows, nicht erst am Ende). Die ersten 1.5s nach dem Erzeugen
