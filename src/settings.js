@@ -132,11 +132,14 @@ function getSettings() {
 // Nur uebergebene Felder werden geaendert; leere/undefined Secret-Felder lassen den
 // bisherigen gespeicherten Wert unangetastet (Maske zeigt Secrets nie im Klartext an,
 // ein leeres Feld beim Speichern heisst also "unveraendert lassen", nicht "loeschen").
-function saveSettings({ elevenLabsKey, llmPolishEnabled, llmApiKey, silenceMs, hotkey, showWidget, glossary, maxRecordMs, widgetX, widgetY } = {}) {
+function saveSettings({ elevenLabsKey, llmPolishEnabled, llmApiKey, llmModel, silenceMs, hotkey, showWidget, glossary, maxRecordMs, widgetX, widgetY } = {}) {
   const raw = readRaw();
   if (elevenLabsKey) raw.elevenLabsKey = encrypt(elevenLabsKey);
   if (llmApiKey) raw.llmApiKey = encrypt(llmApiKey);
   if (llmPolishEnabled !== undefined) raw.llmPolishEnabled = !!llmPolishEnabled;
+  // Leeres Feld heisst "Voreinstellung", nicht "leerer Modellname" — sonst ginge eine
+  // geleerte Eingabe als ungueltiges Modell an Groq.
+  if (typeof llmModel === 'string') raw.llmModel = llmModel.trim() || undefined;
   if (Number.isFinite(silenceMs)) raw.silenceMs = silenceMs;
   if (hotkey) raw.hotkey = hotkey;
   if (showWidget !== undefined) raw.showWidget = !!showWidget;

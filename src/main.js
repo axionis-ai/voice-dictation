@@ -414,12 +414,13 @@ ipcMain.handle('settings:load', () => {
     hotkey: s.hotkey,
     showWidget: s.showWidget,
     glossary: s.glossary,
+    llmModel: s.llmModel,
     stats: s.stats,
     appVersion: app.getVersion(), // fuer die Versionsanzeige im Footer der Maske
   };
 });
 
-ipcMain.handle('settings:save', (_e, { elevenLabsKey, llmPolishEnabled, llmApiKey, silenceMs, hotkey, showWidget, glossary, maxRecordMs }) => {
+ipcMain.handle('settings:save', (_e, { elevenLabsKey, llmPolishEnabled, llmApiKey, llmModel, silenceMs, hotkey, showWidget, glossary, maxRecordMs }) => {
   const current = settings.getSettings();
   if (!elevenLabsKey && !current.hasElevenLabsKey) {
     return { ok: false, error: 'ElevenLabs-Key wird benötigt.' };

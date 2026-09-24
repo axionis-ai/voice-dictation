@@ -2,6 +2,10 @@
 
 All notable changes to Axionis Dictate, newest first.
 
+## 0.16.0
+- **The polishing model is now selectable** in the settings window, next to the Groq key. Leave it empty for the default (openai/gpt-oss-20b). A larger model corrects grammar more reliably at the cost of a little latency; any model name Groq offers is accepted.
+- The setting already existed in the config file but had no way to reach it. Brought over from the Android build, where inconsistent English polishing made the need obvious.
+
 ## 0.15.1
 - **Fix: dictation was broken by 0.15.0.** That version re-asserted the status icon every 10 seconds using moveTop(), which seizes the window order on Windows and interfered with the exact moment the app simulates Ctrl+V into your target window. The text stayed put and the previous clipboard was restored over it. The ticker is gone — a visible icon is cosmetic, working dictation is the point of the app.
 - If the icon slips behind other windows again, that is the earlier, harmless behaviour. It will be solved differently.

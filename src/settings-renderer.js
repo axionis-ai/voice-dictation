@@ -7,6 +7,7 @@ const elevenLabsKeyEl = document.getElementById('elevenLabsKey');
 const polishEnabledEl = document.getElementById('polishEnabled');
 const polishFieldsEl = document.getElementById('polishFields');
 const llmApiKeyEl = document.getElementById('llmApiKey');
+const llmModelEl = document.getElementById('llmModel');
 const statusEl = document.getElementById('status');
 const silenceMsEl = document.getElementById('silenceMs');
 const silenceMsValueEl = document.getElementById('silenceMsValue');
@@ -163,6 +164,8 @@ ipcRenderer.invoke('settings:load').then((s) => {
   elevenLabsKeyEl.placeholder = s.hasElevenLabsKey ? '•••• gespeichert — zum Ändern neu eingeben' : 'xi-...';
   polishEnabledEl.checked = !!s.llmPolishEnabled;
   llmApiKeyEl.placeholder = s.hasLlmApiKey ? '•••• gespeichert — zum Ändern neu eingeben' : 'gsk_...';
+  // Nur zeigen, was wirklich abweicht — sonst sieht die Voreinstellung aus wie eine Wahl.
+  llmModelEl.value = s.llmModel && s.llmModel !== 'openai/gpt-oss-20b' ? s.llmModel : '';
   updatePolishFieldsVisibility();
 
   const seconds = (s.silenceMs / 1000).toFixed(1);
@@ -198,13 +201,14 @@ document.getElementById('saveBtn').addEventListener('click', async () => {
   const elevenLabsKey = elevenLabsKeyEl.value.trim();
   const llmPolishEnabled = polishEnabledEl.checked;
   const llmApiKey = llmApiKeyEl.value.trim();
+  const llmModel = llmModelEl.value.trim();
   const silenceMs = Math.round(parseFloat(silenceMsEl.value) * 1000);
   const maxRecordMs = Math.round(parseFloat(maxRecordMinEl.value) * 60000);
   const hotkey = pendingHotkey || currentHotkey;
   const showWidget = showWidgetEl.checked;
   const glossary = glossaryEl.value.split(',').map((s) => s.trim()).filter(Boolean);
 
-  const result = await ipcRenderer.invoke('settings:save', { elevenLabsKey, llmPolishEnabled, llmApiKey, silenceMs, hotkey, showWidget, glossary, maxRecordMs });
+  const result = await ipcRenderer.invoke('settings:save', { elevenLabsKey, llmPolishEnabled, llmApiKey, llmModel, silenceMs, hotkey, showWidget, glossary, maxRecordMs });
   if (!result.ok) {
     statusEl.textContent = result.error || 'ElevenLabs-Key wird benötigt.';
     statusEl.style.color = '#ff8a8a';
