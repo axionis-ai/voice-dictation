@@ -59,7 +59,7 @@ function notifyWidget() {
   if (!widgetWin) return;
   widgetWin.webContents.send('widget:state', {
     state,
-    hasElevenLabsKey: settings.getSettings().hasElevenLabsKey,
+    hasElevenLabsKey: settings.getSettings().isReady,
   });
 }
 
@@ -132,7 +132,7 @@ function checkForUpdates() {
 }
 
 function stateLabel() {
-  if (!settings.getSettings().hasElevenLabsKey) return 'Nicht eingerichtet — Klick für Einstellungen';
+  if (!settings.getSettings().isReady) return 'Nicht eingerichtet — Klick für Einstellungen';
   switch (state) {
     case 'recording': return lockMode
       ? `● REC (Feststelltaste) — ${hotkeyLabel()} zum Stoppen`
@@ -311,7 +311,7 @@ function openSettingsWindow() {
 }
 
 function toggleDictation() {
-  if (!settings.getSettings().hasElevenLabsKey) {
+  if (!settings.getSettings().isReady) {
     openSettingsWindow();
     return;
   }
@@ -407,6 +407,9 @@ ipcMain.handle('settings:load', () => {
   const s = settings.getSettings();
   return {
     hasElevenLabsKey: s.hasElevenLabsKey,
+    isReady: s.isReady,
+    sttProvider: s.sttProvider,
+    sttModel: s.sttModel,
     hasLlmApiKey: s.hasLlmApiKey,
     llmPolishEnabled: s.llmPolishEnabled,
     silenceMs: s.silenceMs,
@@ -420,9 +423,15 @@ ipcMain.handle('settings:load', () => {
   };
 });
 
-ipcMain.handle('settings:save', (_e, { elevenLabsKey, llmPolishEnabled, llmApiKey, llmModel, silenceMs, hotkey, showWidget, glossary, maxRecordMs }) => {
+ipcMain.handle('settings:save', (_e, { elevenLabsKey, llmPolishEnabled, llmApiKey, llmModel, sttProvider, sttModel, silenceMs, hotkey, showWidget, glossary, maxRecordMs }) => {
   const current = settings.getSettings();
-  if (!elevenLabsKey && !current.hasElevenLabsKey) {
+  // Je nach gewaehltem Anbieter ist ein ANDERER Schluessel Pflicht. Wer Groq fuer die
+  // Erkennung nutzt, braucht gar keinen ElevenLabs-Key mehr.
+  if (sttProvider === 'groq') {
+    if (!llmApiKey && !current.hasLlmApiKey) {
+      return { ok: false, error: 'Groq als Erkennung gewählt, aber kein Groq-Key eingegeben.' };
+    }
+  } else if (!elevenLabsKey && !current.hasElevenLabsKey) {
     return { ok: false, error: 'ElevenLabs-Key wird benötigt.' };
   }
   if (llmPolishEnabled && !llmApiKey && !current.hasLlmApiKey) {
@@ -500,7 +509,7 @@ if (!gotTheLock) {
     const icon = nativeImage.createFromPath(path.join(__dirname, 'icon.png'));
     tray = new Tray(icon.isEmpty() ? nativeImage.createEmpty() : icon);
     tray.on('click', () => {
-      if (!settings.getSettings().hasElevenLabsKey) openSettingsWindow();
+      if (!settings.getSettings().isReady) openSettingsWindow();
     });
     updateTray();
 
@@ -517,7 +526,7 @@ if (!gotTheLock) {
     registerHotkey();
 
     // Erststart ohne Key: Einstellungen direkt zeigen statt stumm zu warten.
-    if (!settings.getSettings().hasElevenLabsKey) {
+    if (!settings.getSettings().isReady) {
       openSettingsWindow();
     }
 

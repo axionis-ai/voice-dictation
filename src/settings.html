@@ -209,6 +209,8 @@
     border-bottom-color: var(--ember-line);
   }
   .footer-brand { font-family: 'Space Grotesk', sans-serif; letter-spacing: 0.02em; }
+  select { width: 100%; padding: 9px 10px; border-radius: 8px; background: #16171f; color: #F1ECE3; border: 1px solid rgba(241,236,227,0.14); font: inherit; }
+  select:focus { outline: none; border-color: rgba(255,90,54,0.5); }
 </style>
 </head>
 <body>
@@ -226,6 +228,16 @@
       <li>Auf <strong>„Create API Key"</strong> klicken, Namen vergeben, Schlüssel kopieren.</li>
       <li>Hier unten in das Feld einfügen und auf <strong>Speichern</strong> klicken.</li>
     </ol>
+  </div>
+
+  <h1>Spracherkennung</h1>
+  <p class="hint">Wer das Gesprochene in Text verwandelt. Beide Wege funktionieren, sie unterscheiden sich in Preis und Genauigkeit.</p>
+  <div class="field">
+    <select id="sttProvider">
+      <option value="elevenlabs">ElevenLabs Scribe — beste Erkennung, echtes Glossar</option>
+      <option value="groq">Groq Whisper — kostenlos, kein echtes Glossar</option>
+    </select>
+    <p class="hint" id="sttHint"></p>
   </div>
 
   <h1>ElevenLabs API-Key</h1>

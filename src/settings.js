@@ -12,6 +12,7 @@ const DEFAULT_LLM_MODEL = 'openai/gpt-oss-20b';
 const DEFAULT_SILENCE_MS = 1800;
 const DEFAULT_HOTKEY = 'Super+Y';
 const DEFAULT_MAX_RECORD_MS = 30 * 60 * 1000; // 30 Minuten
+const DEFAULT_STT_MODEL = 'whisper-large-v3-turbo';
 
 function configPath() {
   return path.join(app.getPath('userData'), 'config.json');
@@ -117,6 +118,10 @@ function getSettings() {
     hasLlmApiKey: !!llmApiKey,
     llmBaseUrl: raw.llmBaseUrl || DEFAULT_LLM_BASE_URL,
     llmModel: raw.llmModel || DEFAULT_LLM_MODEL,
+    // Welcher Dienst die Spracherkennung macht. Voreinstellung bleibt ElevenLabs:
+    // bessere Erkennung und ein echtes Glossar. 'groq' ist die kostenlose Alternative.
+    sttProvider: raw.sttProvider === 'groq' ? 'groq' : 'elevenlabs',
+    sttModel: raw.sttModel || DEFAULT_STT_MODEL,
     silenceMs: Number.isFinite(raw.silenceMs) ? raw.silenceMs : DEFAULT_SILENCE_MS,
     hotkey: raw.hotkey || DEFAULT_HOTKEY,
     showWidget: raw.showWidget !== false, // Default an
@@ -126,13 +131,18 @@ function getSettings() {
     widgetX: Number.isFinite(raw.widgetX) ? raw.widgetX : null,
     widgetY: Number.isFinite(raw.widgetY) ? raw.widgetY : null,
     stats: readStats(raw),
+    // EINE Stelle, die sagt "die App kann arbeiten". Vorher wurde ueberall direkt
+    // hasElevenLabsKey geprueft — mit dem zweiten Anbieter waere das an sechs Stellen
+    // falsch geworden, und der Nutzer haette trotz gueltigem Groq-Key "Nicht
+    // eingerichtet" gesehen.
+    isReady: (raw.sttProvider === 'groq') ? !!llmApiKey : !!elevenLabsKey,
   };
 }
 
 // Nur uebergebene Felder werden geaendert; leere/undefined Secret-Felder lassen den
 // bisherigen gespeicherten Wert unangetastet (Maske zeigt Secrets nie im Klartext an,
 // ein leeres Feld beim Speichern heisst also "unveraendert lassen", nicht "loeschen").
-function saveSettings({ elevenLabsKey, llmPolishEnabled, llmApiKey, llmModel, silenceMs, hotkey, showWidget, glossary, maxRecordMs, widgetX, widgetY } = {}) {
+function saveSettings({ elevenLabsKey, llmPolishEnabled, llmApiKey, llmModel, sttProvider, sttModel, silenceMs, hotkey, showWidget, glossary, maxRecordMs, widgetX, widgetY } = {}) {
   const raw = readRaw();
   if (elevenLabsKey) raw.elevenLabsKey = encrypt(elevenLabsKey);
   if (llmApiKey) raw.llmApiKey = encrypt(llmApiKey);
@@ -140,6 +150,8 @@ function saveSettings({ elevenLabsKey, llmPolishEnabled, llmApiKey, llmModel, si
   // Leeres Feld heisst "Voreinstellung", nicht "leerer Modellname" — sonst ginge eine
   // geleerte Eingabe als ungueltiges Modell an Groq.
   if (typeof llmModel === 'string') raw.llmModel = llmModel.trim() || undefined;
+  if (sttProvider === 'groq' || sttProvider === 'elevenlabs') raw.sttProvider = sttProvider;
+  if (typeof sttModel === 'string') raw.sttModel = sttModel.trim() || undefined;
   if (Number.isFinite(silenceMs)) raw.silenceMs = silenceMs;
   if (hotkey) raw.hotkey = hotkey;
   if (showWidget !== undefined) raw.showWidget = !!showWidget;
@@ -151,4 +163,4 @@ function saveSettings({ elevenLabsKey, llmPolishEnabled, llmApiKey, llmModel, si
   return getSettings();
 }
 
-module.exports = { getSettings, saveSettings, addDictation, DEFAULT_LLM_BASE_URL, DEFAULT_LLM_MODEL, DEFAULT_SILENCE_MS, DEFAULT_HOTKEY, DEFAULT_MAX_RECORD_MS };
+module.exports = { getSettings, saveSettings, addDictation, DEFAULT_STT_MODEL, DEFAULT_LLM_BASE_URL, DEFAULT_LLM_MODEL, DEFAULT_SILENCE_MS, DEFAULT_HOTKEY, DEFAULT_MAX_RECORD_MS };

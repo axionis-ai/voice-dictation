@@ -2,6 +2,11 @@
 
 All notable changes to Axionis Dictate, newest first.
 
+## 0.17.0
+- **Groq Whisper als kostenlose Alternative zu ElevenLabs Scribe.** Wählbar in den Einstellungen; ElevenLabs bleibt die Voreinstellung. Wer Groq wählt, braucht nur noch **einen** Schlüssel für Erkennung und Politur — 8 Stunden Audio pro Tag sind dort dauerhaft kostenlos.
+- Ehrlich benannt, direkt unter der Auswahl: Groq kennt kein echtes Glossar. Der Whisper-Prompt ist ein Hinweis, keine feste Vorgabe — Eigennamen können falsch geschrieben ankommen. Genau dafür bleibt ElevenLabs die bessere Wahl.
+- Die Prüfung "ist die App einsatzbereit" hängt jetzt am gewählten Anbieter statt immer am ElevenLabs-Key.
+
 ## 0.16.0
 - **The polishing model is now selectable** in the settings window, next to the Groq key. Leave it empty for the default (openai/gpt-oss-20b). A larger model corrects grammar more reliably at the cost of a little latency; any model name Groq offers is accepted.
 - The setting already existed in the config file but had no way to reach it. Brought over from the Android build, where inconsistent English polishing made the need obvious.
