@@ -2,6 +2,10 @@
 
 All notable changes to Axionis Dictate, newest first.
 
+## 0.15.1
+- **Fix: dictation was broken by 0.15.0.** That version re-asserted the status icon every 10 seconds using moveTop(), which seizes the window order on Windows and interfered with the exact moment the app simulates Ctrl+V into your target window. The text stayed put and the previous clipboard was restored over it. The ticker is gone — a visible icon is cosmetic, working dictation is the point of the app.
+- If the icon slips behind other windows again, that is the earlier, harmless behaviour. It will be solved differently.
+
 ## 0.15.0
 - **Fix: the status icon could silently fall behind other windows.** It is set to stay on top, but on Windows that flag gets dropped when other programs reorder windows — the icon never takes focus, so nothing restores it. Observed live: window visible, topmost flag gone. It is now re-asserted every 10 seconds.
 - **New default position: horizontally centred, just above the taskbar.** It used to sit bottom-right, in the notification area, where Windows toasts regularly covered it. Existing positions are kept — use "Position zurücksetzen" in settings to move to the new default.

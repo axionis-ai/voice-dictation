@@ -255,26 +255,16 @@ function createWidgetWindow() {
     },
   });
   widgetWin.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
-  // Das alwaysOnTop aus den Fensteroptionen allein haelt auf Windows nicht durch: das
-  // Icon bekommt nie den Fokus, und sobald andere Programme die Fensterreihenfolge
-  // anfassen, faellt es still nach hinten (live beobachtet — Fenster sichtbar, aber
-  // TOPMOST-Flag weg). Deshalb explizit auf der hoechsten Stufe setzen und regelmaessig
-  // nachfassen; kostet praktisch nichts und ist die einzige Variante, die haelt.
-  widgetWin.setAlwaysOnTop(true, 'screen-saver');
+  // HINWEIS: Hier stand in 0.15.0 ein Ticker, der alle 10s setAlwaysOnTop + moveTop()
+  // aufrief, damit das Icon nicht hinter andere Fenster rutscht. Das hat das Einfuegen
+  // zerstoert: moveTop() reisst unter Windows die Fensterreihenfolge an sich und stoert
+  // genau den Moment, in dem inserter.js Strg+V ins Zielfenster simuliert — der Text
+  // blieb liegen und die alte Zwischenablage wurde zurueckgeschrieben.
+  // Ein sichtbares Icon ist Kosmetik, funktionierendes Diktieren ist der Zweck der App.
+  // Deshalb zurueck auf das schlichte alwaysOnTop aus den Fensteroptionen.
   widgetWin.loadFile(path.join(__dirname, 'widget.html'));
 
-  // Bewusst OHNE isAlwaysOnTop()-Abfrage: die liefert nur Electrons interne Annahme.
-  // Entfernt Windows das Flag von aussen, weiss Electron davon nichts und meldet weiter
-  // "true" — die Pruefung wuerde also ausgerechnet im Fehlerfall nicht anschlagen.
-  // Deshalb unbedingt neu setzen. moveTop() erzwingt zusaetzlich einen echten
-  // Windows-Aufruf zur Fensterreihenfolge; beides klaut keinen Fokus.
-  const keepOnTop = setInterval(() => {
-    if (!widgetWin || widgetWin.isDestroyed()) return;
-    widgetWin.setAlwaysOnTop(true, 'screen-saver');
-    widgetWin.moveTop();
-  }, 10000);
-
-  widgetWin.on('closed', () => { clearInterval(keepOnTop); widgetWin = null; });
+  widgetWin.on('closed', () => { widgetWin = null; });
 
   // Position nach dem Ziehen speichern (entprellt — 'moved' feuert mehrfach waehrend
   // des Ziehens auf Windows, nicht erst am Ende). Die ersten 1.5s nach dem Erzeugen
