@@ -2,6 +2,10 @@
 
 All notable changes to Axionis Dictate, newest first.
 
+## 0.18.1
+- **Typografie der neuen Elemente korrigiert.** Auswahlfeld und Update-Knopf hatten eigene Stilregeln mit `font: inherit` bekommen und waren dadurch größer als alles andere in der Maske. Sie folgen jetzt denselben Regeln wie die übrigen Eingabefelder (13,5 px) und Knöpfe (13 px) — dieselbe Zeile im Stylesheet, keine nachgebaute Kopie.
+- Abgeschaltete Knöpfe werden einheitlich gedämpft dargestellt.
+
 ## 0.18.0
 - **Update-Bereich in den Einstellungen:** laufende Version, ein Knopf "Nach Update suchen" und eine Statuszeile (wird geprüft / aktuell / lädt XX % / fertig, jetzt installieren). Bisher gab es nur einen Eintrag im Infobereich der Taskleiste, und der erschien **erst, wenn ein Update schon geladen war** — wer dort nicht hinsah, hatte keinen Anhaltspunkt und keine Möglichkeit, selbst zu prüfen.
 - **Fehlgeschlagene Prüfungen werden nicht mehr verschluckt.** Sie erscheinen mit Grund in der Statuszeile, stören aber weiterhin nichts. Vorher sah ein Fehlschlag genauso aus wie "alles aktuell".

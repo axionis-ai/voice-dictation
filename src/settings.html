@@ -61,7 +61,7 @@
     color: var(--bone-dim);
     margin-bottom: 6px;
   }
-  input[type="password"], input[type="text"] {
+  input[type="password"], input[type="text"], select {
     width: 100%;
     background: rgba(255,255,255,0.04);
     border: 1px solid var(--hair);
@@ -73,7 +73,7 @@
     outline: none;
     transition: border-color .15s;
   }
-  input:focus { border-color: var(--ember-line); }
+  input:focus, select:focus { border-color: var(--ember-line); }
   input::placeholder { color: var(--ash); }
   .field { margin-bottom: 16px; }
   .checkbox-row {
@@ -112,6 +112,7 @@
     color: #1a0e08;
   }
   button.primary:hover { background: var(--ember-2); }
+  button:disabled { opacity: .5; cursor: default; }
   #status {
     font-size: 12px;
     color: var(--ember-2);
@@ -209,11 +210,6 @@
     border-bottom-color: var(--ember-line);
   }
   .footer-brand { font-family: 'Space Grotesk', sans-serif; letter-spacing: 0.02em; }
-  select { width: 100%; padding: 9px 10px; border-radius: 8px; background: #16171f; color: #F1ECE3; border: 1px solid rgba(241,236,227,0.14); font: inherit; }
-  select:focus { outline: none; border-color: rgba(255,90,54,0.5); }
-  .btn-secondary { padding: 8px 14px; border-radius: 8px; background: #1c1d28; color: #F1ECE3; border: 1px solid rgba(241,236,227,0.16); font: inherit; cursor: pointer; }
-  .btn-secondary:hover { border-color: rgba(255,90,54,0.5); }
-  .btn-secondary:disabled { opacity: .5; cursor: default; }
 </style>
 </head>
 <body>
@@ -329,7 +325,7 @@
       <span class="slider-value" id="updVersion">–</span>
     </div>
     <p class="hint" id="updStatus">Wird geprüft …</p>
-    <button type="button" id="updBtn" class="btn-secondary">Nach Update suchen</button>
+    <button type="button" id="updBtn" class="secondary">Nach Update suchen</button>
   </div>
 
   <div class="footer">
