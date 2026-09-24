@@ -8,6 +8,7 @@ const polishEnabledEl = document.getElementById('polishEnabled');
 const polishFieldsEl = document.getElementById('polishFields');
 const llmApiKeyEl = document.getElementById('llmApiKey');
 const llmModelEl = document.getElementById('llmModel');
+const sttProviderEl = document.getElementById('sttProvider');
 const statusEl = document.getElementById('status');
 const silenceMsEl = document.getElementById('silenceMs');
 const silenceMsValueEl = document.getElementById('silenceMsValue');
@@ -152,6 +153,67 @@ function renderStats(stats) {
     + `gesprochen hast du ${formatDuration(stats.recordedMs)}.`;
 }
 
+// Beschreibt in einem Satz, was die Wahl bedeutet — und sagt beim kostenlosen Weg
+// ehrlich dazu, was er NICHT kann. Eine Auswahl ohne Folgenbeschreibung ist keine.
+function updateSttHint() {
+  const groq = sttProviderEl.value === 'groq';
+  document.getElementById('sttHint').textContent = groq
+    ? 'Nutzt denselben Groq-Key wie die Politur — ein Schlüssel für alles, 8 Stunden Audio pro Tag kostenlos. Dein Glossar wirkt hier nur als Hinweis, nicht als feste Vorgabe: Eigennamen können falsch geschrieben ankommen.'
+    : 'Erkennt am zuverlässigsten und hält sich an dein Glossar. Braucht einen eigenen ElevenLabs-Key; das Freikontingent reicht zum Ausprobieren.';
+}
+sttProviderEl.addEventListener('change', updateSttHint);
+
+// --- Aktualisierung ---------------------------------------------------------
+//
+// Bisher gab es nur den Tray-Eintrag, und der erschien erst, WENN ein Update schon
+// heruntergeladen war. Wer dort nicht hinsah, hatte weder eine Anzeige noch eine
+// Moeglichkeit, selbst zu pruefen — und ein fehlgeschlagener Check sah genauso aus wie
+// "alles aktuell".
+const updBtn = document.getElementById('updBtn');
+const updStatus = document.getElementById('updStatus');
+
+function renderUpdate(st) {
+  if (!st) return;
+  updBtn.disabled = false;
+  updBtn.textContent = 'Nach Update suchen';
+  switch (st.phase) {
+    case 'checking':
+      updStatus.textContent = 'Suche nach einer neueren Version …';
+      updBtn.disabled = true;
+      break;
+    case 'none':
+      updStatus.textContent = 'Du hast die neueste Version.';
+      break;
+    case 'downloading':
+      updStatus.textContent = 'Version ' + (st.version || '') + ' wird geladen … ' + (st.percent || 0) + ' %';
+      updBtn.disabled = true;
+      break;
+    case 'ready':
+      updStatus.textContent = 'Version ' + (st.version || '') + ' ist fertig geladen. Zum Installieren startet die App kurz neu.';
+      updBtn.textContent = 'Jetzt installieren';
+      break;
+    case 'error':
+      updStatus.textContent = 'Prüfung fehlgeschlagen: ' + (st.error || 'unbekannter Fehler') + ' — aufs Diktieren hat das keinen Einfluss.';
+      break;
+    case 'dev':
+      updStatus.textContent = 'Entwicklungsbetrieb — hier gibt es keine Releases zum Vergleichen.';
+      updBtn.disabled = true;
+      break;
+    default:
+      updStatus.textContent = 'Noch nicht geprüft.';
+  }
+}
+
+updBtn.addEventListener('click', async () => {
+  if (updBtn.textContent === 'Jetzt installieren') {
+    await ipcRenderer.invoke('update:install');
+    return;
+  }
+  renderUpdate(await ipcRenderer.invoke('update:check'));
+});
+ipcRenderer.on('update:state', (_e, st) => renderUpdate(st));
+ipcRenderer.invoke('update:state').then(renderUpdate);
+
 function updatePolishFieldsVisibility() {
   polishFieldsEl.classList.toggle('show', polishEnabledEl.checked);
 }
@@ -166,6 +228,9 @@ ipcRenderer.invoke('settings:load').then((s) => {
   llmApiKeyEl.placeholder = s.hasLlmApiKey ? '•••• gespeichert — zum Ändern neu eingeben' : 'gsk_...';
   // Nur zeigen, was wirklich abweicht — sonst sieht die Voreinstellung aus wie eine Wahl.
   llmModelEl.value = s.llmModel && s.llmModel !== 'openai/gpt-oss-20b' ? s.llmModel : '';
+  sttProviderEl.value = s.sttProvider || 'elevenlabs';
+  updateSttHint();
+  document.getElementById('updVersion').textContent = s.appVersion || '–';
   updatePolishFieldsVisibility();
 
   const seconds = (s.silenceMs / 1000).toFixed(1);
@@ -202,13 +267,14 @@ document.getElementById('saveBtn').addEventListener('click', async () => {
   const llmPolishEnabled = polishEnabledEl.checked;
   const llmApiKey = llmApiKeyEl.value.trim();
   const llmModel = llmModelEl.value.trim();
+  const sttProvider = sttProviderEl.value;
   const silenceMs = Math.round(parseFloat(silenceMsEl.value) * 1000);
   const maxRecordMs = Math.round(parseFloat(maxRecordMinEl.value) * 60000);
   const hotkey = pendingHotkey || currentHotkey;
   const showWidget = showWidgetEl.checked;
   const glossary = glossaryEl.value.split(',').map((s) => s.trim()).filter(Boolean);
 
-  const result = await ipcRenderer.invoke('settings:save', { elevenLabsKey, llmPolishEnabled, llmApiKey, llmModel, silenceMs, hotkey, showWidget, glossary, maxRecordMs });
+  const result = await ipcRenderer.invoke('settings:save', { elevenLabsKey, llmPolishEnabled, llmApiKey, llmModel, sttProvider, silenceMs, hotkey, showWidget, glossary, maxRecordMs });
   if (!result.ok) {
     statusEl.textContent = result.error || 'ElevenLabs-Key wird benötigt.';
     statusEl.style.color = '#ff8a8a';

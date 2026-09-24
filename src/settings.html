@@ -211,6 +211,9 @@
   .footer-brand { font-family: 'Space Grotesk', sans-serif; letter-spacing: 0.02em; }
   select { width: 100%; padding: 9px 10px; border-radius: 8px; background: #16171f; color: #F1ECE3; border: 1px solid rgba(241,236,227,0.14); font: inherit; }
   select:focus { outline: none; border-color: rgba(255,90,54,0.5); }
+  .btn-secondary { padding: 8px 14px; border-radius: 8px; background: #1c1d28; color: #F1ECE3; border: 1px solid rgba(241,236,227,0.16); font: inherit; cursor: pointer; }
+  .btn-secondary:hover { border-color: rgba(255,90,54,0.5); }
+  .btn-secondary:disabled { opacity: .5; cursor: default; }
 </style>
 </head>
 <body>
@@ -318,6 +321,15 @@
   <div class="actions">
     <button class="secondary" id="closeBtn">Schließen</button>
     <button class="primary" id="saveBtn">Speichern</button>
+  </div>
+
+  <div class="section">
+    <div class="slider-row">
+      <label style="margin-bottom:0">Version</label>
+      <span class="slider-value" id="updVersion">–</span>
+    </div>
+    <p class="hint" id="updStatus">Wird geprüft …</p>
+    <button type="button" id="updBtn" class="btn-secondary">Nach Update suchen</button>
   </div>
 
   <div class="footer">

@@ -2,6 +2,11 @@
 
 All notable changes to Axionis Dictate, newest first.
 
+## 0.18.0
+- **Update-Bereich in den Einstellungen:** laufende Version, ein Knopf "Nach Update suchen" und eine Statuszeile (wird geprüft / aktuell / lädt XX % / fertig, jetzt installieren). Bisher gab es nur einen Eintrag im Infobereich der Taskleiste, und der erschien **erst, wenn ein Update schon geladen war** — wer dort nicht hinsah, hatte keinen Anhaltspunkt und keine Möglichkeit, selbst zu prüfen.
+- **Fehlgeschlagene Prüfungen werden nicht mehr verschluckt.** Sie erscheinen mit Grund in der Statuszeile, stören aber weiterhin nichts. Vorher sah ein Fehlschlag genauso aus wie "alles aktuell".
+- **Fehler aus 0.17.0 behoben: die Anbieterauswahl war wirkungslos.** Das Auswahlfeld war da, die Verdrahtung dahinter fehlte — wer Groq wählte, diktierte weiter über ElevenLabs. Wer 0.17.0 installiert hat, sollte aktualisieren.
+
 ## 0.17.0
 - **Groq Whisper als kostenlose Alternative zu ElevenLabs Scribe.** Wählbar in den Einstellungen; ElevenLabs bleibt die Voreinstellung. Wer Groq wählt, braucht nur noch **einen** Schlüssel für Erkennung und Politur — 8 Stunden Audio pro Tag sind dort dauerhaft kostenlos.
 - Ehrlich benannt, direkt unter der Auswahl: Groq kennt kein echtes Glossar. Der Whisper-Prompt ist ein Hinweis, keine feste Vorgabe — Eigennamen können falsch geschrieben ankommen. Genau dafür bleibt ElevenLabs die bessere Wahl.

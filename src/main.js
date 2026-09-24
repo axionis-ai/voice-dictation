@@ -94,18 +94,40 @@ const UPDATE_CHECK_INTERVAL_MS = 6 * 60 * 60 * 1000; // falls die App tagelang d
 let availableUpdate = null; // Versionsnummer, sobald eine neuere gefunden wurde
 let updateReady = false;    // true = fertig heruntergeladen, Installation per Klick moeglich
 
+// Zustand der Aktualisierung, damit die Einstellungsmaske ihn ANZEIGEN kann. Vorher gab
+// es nur den Tray-Eintrag, der erst nach dem Herunterladen erschien — wer dort nicht
+// hinsah, hatte keinerlei Anhaltspunkt und keinen Weg, selbst zu pruefen.
+let updateState = { phase: 'idle', version: null, percent: 0, error: null };
+
+function setUpdateState(patch) {
+  updateState = Object.assign({}, updateState, patch);
+  if (settingsWin && !settingsWin.isDestroyed()) {
+    try { settingsWin.webContents.send('update:state', updateState); } catch { /* ignore */ }
+  }
+}
+
 autoUpdater.autoDownload = true;
 // Beim Beenden NICHT heimlich installieren — die Installation passiert nur auf Klick.
 autoUpdater.autoInstallOnAppQuit = false;
 
+autoUpdater.on('update-not-available', () => {
+  setUpdateState({ phase: 'none', version: null, error: null });
+});
+
+autoUpdater.on('download-progress', (p) => {
+  setUpdateState({ phase: 'downloading', percent: Math.round((p && p.percent) || 0) });
+});
+
 autoUpdater.on('update-available', (info) => {
   availableUpdate = (info && info.version) || null;
+  setUpdateState({ phase: 'downloading', version: availableUpdate, percent: 0, error: null });
   updateTray(); // Menue zeigt "wird geladen", der Eintrag zum Installieren kommt erst danach
 });
 
 autoUpdater.on('update-downloaded', (info) => {
   availableUpdate = (info && info.version) || availableUpdate;
   updateReady = true;
+  setUpdateState({ phase: 'ready', version: availableUpdate, percent: 100, error: null });
   updateTray();
   // Erst JETZT benachrichtigen, nicht schon bei 'update-available': vorher waere die
   // Installation noch gar nicht moeglich und der Hinweis liefe ins Leere.
@@ -121,15 +143,35 @@ autoUpdater.on('update-downloaded', (info) => {
 // Ein fehlgeschlagener Update-Check (kein Netz, GitHub down) darf das Diktieren niemals
 // stoeren — nur protokollieren, sonst passiert nichts.
 autoUpdater.on('error', (err) => {
-  console.error('[update] Pruefung fehlgeschlagen:', (err && err.message) || err);
+  const msg = (err && err.message) || String(err);
+  console.error('[update] Pruefung fehlgeschlagen:', msg);
+  // Weiterhin NICHT stoerend: kein Fenster, kein Ton. Aber in der Maske sichtbar —
+  // ein stiller Fehlschlag sieht sonst genauso aus wie "alles aktuell".
+  setUpdateState({ phase: 'error', error: msg });
 });
 
 function checkForUpdates() {
-  if (!app.isPackaged) return; // im Dev-Betrieb gibt es kein Release zum Vergleichen
+  if (!app.isPackaged) {
+    // Im Dev-Betrieb gibt es kein Release zum Vergleichen. Das ehrlich sagen, statt
+    // wortlos nichts zu tun.
+    setUpdateState({ phase: 'dev', error: null });
+    return;
+  }
+  setUpdateState({ phase: 'checking', error: null });
   autoUpdater.checkForUpdates().catch((e) => {
-    console.error('[update] checkForUpdates:', (e && e.message) || e);
+    const msg = (e && e.message) || String(e);
+    console.error('[update] checkForUpdates:', msg);
+    setUpdateState({ phase: 'error', error: msg });
   });
 }
+
+ipcMain.handle('update:check', () => { checkForUpdates(); return updateState; });
+ipcMain.handle('update:state', () => updateState);
+ipcMain.handle('update:install', () => {
+  if (!updateReady) return { ok: false };
+  autoUpdater.quitAndInstall();
+  return { ok: true };
+});
 
 function stateLabel() {
   if (!settings.getSettings().isReady) return 'Nicht eingerichtet — Klick für Einstellungen';
