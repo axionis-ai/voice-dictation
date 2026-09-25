@@ -85,7 +85,16 @@ function registerHotkey() {
   return true;
 }
 
-// --- Auto-Update (electron-updater gegen GitHub Releases) ---
+// --- Auto-Update (electron-updater gegen unsere eigene Domain) ---
+//
+// Frueher liefen die Updates ueber oeffentliche GitHub-Releases. Das hiess: Das Repo
+// MUSSTE oeffentlich bleiben, sonst konnte sich keine installierte Kopie mehr
+// aktualisieren. Eine Produktentscheidung (Quellcode zeigen oder nicht) war damit an
+// eine technische Abhaengigkeit gekettet — falsch herum.
+//
+// Jetzt liegt latest.yml unter axionisconsulting.com/voice/updates/, genau wie es die
+// Android-Fassung schon macht. Der Quellcode kann damit privat sein, ohne dass
+// irgendetwas kaputtgeht.
 // Bewusst zurueckhaltend: still pruefen, EINMAL kurz per System-Benachrichtigung Bescheid
 // geben und den dauerhaften Weg ins Tray-Menue legen. Nie ungefragt installieren, nie ein
 // Fenster in den Vordergrund draengen — das Tool wuerde sonst mitten im Diktieren stoeren.

@@ -1,7 +1,7 @@
 {
   "name": "axionis-dictate",
   "productName": "Axionis Dictate",
-  "version": "0.18.1",
+  "version": "0.19.0",
   "description": "Win+Y Diktat für Windows — ElevenLabs Scribe + optionale KI-Politur, fügt Text ins fokussierte Fenster ein",
   "main": "src/main.js",
   "author": "Axionis Consulting (https://axionisconsulting.com)",
@@ -27,16 +27,17 @@
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
-      "createStartMenuShortcut": true
+      "createStartMenuShortcut": true,
+      "artifactName": "Axionis-Dictate-Setup-${version}.${ext}"
     },
     "files": [
       "src/**/*"
     ],
     "publish": [
       {
-        "provider": "github",
-        "owner": "axionis-ai",
-        "repo": "voice-dictation"
+        "provider": "generic",
+        "url": "https://axionisconsulting.com/voice/updates/",
+        "channel": "latest"
       }
     ]
   },

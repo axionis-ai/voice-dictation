@@ -2,6 +2,11 @@
 
 All notable changes to Axionis Dictate, newest first.
 
+## 0.19.0
+- **Updates kommen jetzt von axionisconsulting.com statt von GitHub.** Bisher mussten die Releases öffentlich sein, sonst konnte sich keine installierte Kopie aktualisieren — eine Produktentscheidung (Quellcode zeigen oder nicht) hing damit an einer technischen Abhängigkeit. Die Android-Fassung macht es längst so.
+- **Diese Version musst du einmal noch über GitHub beziehen.** Ab ihr läuft alles über die eigene Domain.
+- Installer heißt jetzt einheitlich `Axionis-Dictate-Setup-<version>.exe`, ohne Leerzeichen — in Update-Adressen sind die eine unnötige Fehlerquelle.
+
 ## 0.18.1
 - **Typografie der neuen Elemente korrigiert.** Auswahlfeld und Update-Knopf hatten eigene Stilregeln mit `font: inherit` bekommen und waren dadurch größer als alles andere in der Maske. Sie folgen jetzt denselben Regeln wie die übrigen Eingabefelder (13,5 px) und Knöpfe (13 px) — dieselbe Zeile im Stylesheet, keine nachgebaute Kopie.
 - Abgeschaltete Knöpfe werden einheitlich gedämpft dargestellt.
