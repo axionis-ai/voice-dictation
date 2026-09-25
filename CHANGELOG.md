@@ -2,6 +2,11 @@
 
 All notable changes to Axionis Dictate, newest first.
 
+## 0.21.0
+- **Knopf „Fehlerbericht senden"** neben dem Protokoll. Er schickt das Protokoll direkt an uns und zeigt dir eine kurze Kennung, die du durchgeben kannst. Kopieren und Einfügen entfällt — und damit die größte Hürde bei der Fehlersuche aus der Ferne.
+- Mitgesendet werden Version, System, gewählter Erkennungsdienst, Politur-Modell, Pausenlänge und die Zahl der Diktate. **Keine Schlüssel, und niemals diktierter Text** — das Protokoll hält per Bauart nur Zeichenzahlen, Dauern, Anbieternamen und Fehlermeldungen fest.
+- Gesendet wird ausschließlich auf Klick, nie von selbst.
+
 ## 0.20.0
 - **Es wurde der falsche Text eingefügt.** Am Testgerät beobachtet: statt des Diktats erschien ein älterer Inhalt aus der Zwischenablage, dazu die Meldung „Paste fehlgeschlagen … ETIMEDOUT". Ursache war ein selbstgebauter Wettlauf: Die Zeitgrenze für PowerShell lag bei 5 Sekunden (für einen Kaltstart auf einem ausgelasteten Rechner zu knapp), und das Zurückgeben des alten Zwischenablage-Inhalts stand in einem `finally` — lief also **auch im Fehlerfall**, nach 250 ms. PowerShell schickte sein Strg+V danach ab, als längst wieder der alte Text in der Zwischenablage stand.
 - Die Fehlermeldung behauptete zudem, das Diktat liege in der Zwischenablage — wo es 250 ms später überschrieben wurde. **Im Fehlerfall wird jetzt nichts mehr zurückgegeben**, das Diktat bleibt liegen und die Meldung stimmt.

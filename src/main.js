@@ -179,6 +179,43 @@ function checkForUpdates() {
 ipcMain.handle('update:check', () => { checkForUpdates(); return updateState; });
 ipcMain.handle('update:state', () => updateState);
 ipcMain.handle('log:read', (_e, includeTech) => eventlog.snapshot(!!includeTech));
+
+/**
+ * Schickt das Protokoll an unseren Endpunkt. Nur auf Klick, nie von selbst.
+ *
+ * Der Inhalt enthaelt per Bauart nichts Diktiertes — das Protokoll haelt ausschliesslich
+ * Zeichenzahlen, Dauern, Anbieternamen und Fehlermeldungen fest. Zusaetzlich gehen
+ * Version, Betriebssystem und die gewaehlten Einstellungen mit, aber KEINE Schluessel.
+ */
+ipcMain.handle('log:send', async () => {
+  const s = settings.getSettings();
+  const kopf = [
+    `App:         Axionis Dictate ${app.getVersion()} (Windows)`,
+    `System:      ${process.platform} ${process.arch}, Electron ${process.versions.electron}`,
+    `Erkennung:   ${s.sttProvider}`,
+    `Politur:     ${s.llmPolishEnabled ? s.llmModel : 'aus'}`,
+    `Pause:       ${s.silenceMs} ms | max. Aufnahme: ${Math.round(s.maxRecordMs / 60000)} min`,
+    `Schlüssel:   ElevenLabs ${s.hasElevenLabsKey ? 'gesetzt' : 'fehlt'}, Groq ${s.hasLlmApiKey ? 'gesetzt' : 'fehlt'}`,
+    `Diktate:     ${s.stats.dictations}`,
+  ].join('\n');
+  const body = kopf + '\n' + '-'.repeat(60) + '\n' + eventlog.snapshot(true).join('\n');
+
+  try {
+    const res = await fetch('https://axionisconsulting.com/voice/report.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain; charset=utf-8' },
+      body,
+      signal: AbortSignal.timeout(15000),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data.ok) throw new Error(data.error || `HTTP ${res.status}`);
+    eventlog.trace(`Fehlerbericht gesendet, Kennung ${data.id}`);
+    return { ok: true, id: data.id };
+  } catch (e) {
+    eventlog.trace(`Fehlerbericht konnte nicht gesendet werden: ${e.message}`);
+    return { ok: false, error: e.message };
+  }
+});
 ipcMain.handle('update:install', () => {
   if (!updateReady) return { ok: false };
   autoUpdater.quitAndInstall();

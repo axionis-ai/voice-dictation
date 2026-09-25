@@ -190,6 +190,22 @@ document.getElementById('logCopy').addEventListener('click', async () => {
   btn.textContent = 'Kopiert';
   setTimeout(() => { btn.textContent = 'Protokoll kopieren'; }, 1500);
 });
+document.getElementById('logSend').addEventListener('click', async () => {
+  const btn = document.getElementById('logSend');
+  const alt = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = 'Wird gesendet …';
+  const res = await ipcRenderer.invoke('log:send');
+  btn.disabled = false;
+  btn.textContent = alt;
+  // Die Kennung anzeigen, damit man sie durchgeben kann — ohne sie waere unklar,
+  // ob und welcher Bericht angekommen ist.
+  logViewEl.textContent = (res.ok
+    ? 'Bericht gesendet. Kennung: ' + res.id + '\n(Diese Kennung kannst du uns nennen.)'
+    : 'Senden fehlgeschlagen: ' + res.error + '\nDu kannst das Protokoll stattdessen kopieren.'
+  ) + '\n\n' + logViewEl.textContent;
+});
+
 refreshLog();
 
 // --- Aktualisierung ---------------------------------------------------------
