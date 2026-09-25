@@ -2,6 +2,12 @@
 
 All notable changes to Axionis Dictate, newest first.
 
+## 0.20.0
+- **Es wurde der falsche Text eingefügt.** Am Testgerät beobachtet: statt des Diktats erschien ein älterer Inhalt aus der Zwischenablage, dazu die Meldung „Paste fehlgeschlagen … ETIMEDOUT". Ursache war ein selbstgebauter Wettlauf: Die Zeitgrenze für PowerShell lag bei 5 Sekunden (für einen Kaltstart auf einem ausgelasteten Rechner zu knapp), und das Zurückgeben des alten Zwischenablage-Inhalts stand in einem `finally` — lief also **auch im Fehlerfall**, nach 250 ms. PowerShell schickte sein Strg+V danach ab, als längst wieder der alte Text in der Zwischenablage stand.
+- Die Fehlermeldung behauptete zudem, das Diktat liege in der Zwischenablage — wo es 250 ms später überschrieben wurde. **Im Fehlerfall wird jetzt nichts mehr zurückgegeben**, das Diktat bleibt liegen und die Meldung stimmt.
+- Zeitgrenze auf 20 Sekunden, Wartezeit vor dem Zurückgeben auf 600 ms, und PowerShell wird direkt gestartet statt über cmd.exe.
+- **Neu: „Was zuletzt passiert ist"** in den Einstellungen — ein Protokoll mit Kopierknopf und einem Schalter für technische Einzelheiten, wie in der Android-Fassung. Vorher verschwand jeder Fehler nach wenigen Sekunden mit der Benachrichtigung. Der diktierte Text steht dort **nie** drin, nur Zeichenzahlen, Dauern und Fehlermeldungen.
+
 ## 0.19.0
 - **Updates kommen jetzt von axionisconsulting.com statt von GitHub.** Bisher mussten die Releases öffentlich sein, sonst konnte sich keine installierte Kopie aktualisieren — eine Produktentscheidung (Quellcode zeigen oder nicht) hing damit an einer technischen Abhängigkeit. Die Android-Fassung macht es längst so.
 - **Diese Version musst du einmal noch über GitHub beziehen.** Ab ihr läuft alles über die eigene Domain.

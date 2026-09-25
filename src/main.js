@@ -99,6 +99,7 @@ function registerHotkey() {
 // geben und den dauerhaften Weg ins Tray-Menue legen. Nie ungefragt installieren, nie ein
 // Fenster in den Vordergrund draengen — das Tool wuerde sonst mitten im Diktieren stoeren.
 const { autoUpdater } = require('electron-updater');
+const eventlog = require('./eventlog');
 const UPDATE_CHECK_INTERVAL_MS = 6 * 60 * 60 * 1000; // falls die App tagelang durchlaeuft
 let availableUpdate = null; // Versionsnummer, sobald eine neuere gefunden wurde
 let updateReady = false;    // true = fertig heruntergeladen, Installation per Klick moeglich
@@ -156,6 +157,7 @@ autoUpdater.on('error', (err) => {
   console.error('[update] Pruefung fehlgeschlagen:', msg);
   // Weiterhin NICHT stoerend: kein Fenster, kein Ton. Aber in der Maske sichtbar —
   // ein stiller Fehlschlag sieht sonst genauso aus wie "alles aktuell".
+  eventlog.trace(`Update-Prüfung fehlgeschlagen: ${msg}`);
   setUpdateState({ phase: 'error', error: msg });
 });
 
@@ -176,6 +178,7 @@ function checkForUpdates() {
 
 ipcMain.handle('update:check', () => { checkForUpdates(); return updateState; });
 ipcMain.handle('update:state', () => updateState);
+ipcMain.handle('log:read', (_e, includeTech) => eventlog.snapshot(!!includeTech));
 ipcMain.handle('update:install', () => {
   if (!updateReady) return { ok: false };
   autoUpdater.quitAndInstall();
@@ -421,13 +424,16 @@ ipcMain.on('recorder:recording', async (_e, arrayBuffer, meta) => {
   // um deren Verarbeitungszeit zu gross.
   const recordedMs = recordingStartedAt ? Date.now() - recordingStartedAt : 0;
   setStatus('transcribing');
+  eventlog.trace(`Aufnahme fertig: ${Math.round(recordedMs / 1000)} s, ${arrayBuffer ? arrayBuffer.byteLength : 0} Bytes`);
   try {
     const buf = Buffer.from(arrayBuffer);
     console.log(`[vd] buffer laenge=${buf.length}`);
+    const anbieter = settings.getSettings().sttProvider === 'groq' ? 'Groq' : 'ElevenLabs';
     const scribed = await scribe.transcribe(buf, { ext: meta.ext, mime: meta.mime });
     let text = scribed.text;
     const languageCode = scribed.languageCode;
     console.log(`[vd] scribe rohtext laenge=${text.length} sprache=${languageCode || '?'} inhalt=${JSON.stringify(text.slice(0, 120))}`);
+    eventlog.note(`Erkannt über ${anbieter}: ${text.length} Zeichen, Sprache ${languageCode || 'unbekannt'}`);
     text = clean.cleanTranscript(text); // regelbasiert (kostenlos, instant)
     console.log(`[vd] clean laenge=${text.length}`);
     if (settings.getSettings().llmPolishEnabled) {
@@ -435,20 +441,26 @@ ipcMain.on('recorder:recording', async (_e, arrayBuffer, meta) => {
       try {
         text = await polish.polish(text, { timeoutMs: 8000, languageCode });
         console.log(`[vd] polish laenge=${text.length}`);
+        eventlog.trace(`Politur angewendet (${languageCode || '?'})`);
       } catch (e) {
         // Politur fehlgeschlagen/Timeout -> regelbasiert bereinigter Text bleibt, Paste nicht blockieren.
         setStatus('transcribing');
         console.error('[vd] Politur-Fallback:', e.message);
+        // Sichtbar machen statt still den Rohtext nehmen: Sonst sieht es aus, als
+        // poliere die App "mal so, mal so".
+        eventlog.note(`Politur fehlgeschlagen, unbereinigter Text eingefügt: ${e.message}`);
       }
     }
     text = voiceCommands.applyCommands(text);
     console.log(`[vd] voiceCommands laenge=${text.length} inhalt=${JSON.stringify(text.slice(0, 120))}`);
     await inserter.insert(text);
     console.log(`[vd] insert fertig`);
+    eventlog.note(`Eingefügt: ${text.length} Zeichen`);
     settings.addDictation({ chars: text.length, recordedMs });
     flashSuccess();
   } catch (err) {
     console.error('[vd] PIPELINE-FEHLER:', err && err.stack ? err.stack : err);
+    eventlog.note(`FEHLER: ${err.message}`);
     setStatus('error', err.message);
   }
 });
@@ -556,6 +568,8 @@ if (!gotTheLock) {
   });
 
   app.whenReady().then(() => {
+  eventlog.trimFile();
+  eventlog.note(`Axionis Dictate ${app.getVersion()} gestartet`);
     // Tray
     const icon = nativeImage.createFromPath(path.join(__dirname, 'icon.png'));
     tray = new Tray(icon.isEmpty() ? nativeImage.createEmpty() : icon);

@@ -1,7 +1,7 @@
 // settings-renderer.js — läuft in src/settings.html (nodeIntegration, kein Preload,
 // gleiches Muster wie recorder-renderer.js). Lädt/speichert nie Klartext-Secrets,
 // nur Booleans ("ist gesetzt") kommen vom Main-Prozess zurück.
-const { ipcRenderer, shell } = require('electron');
+const { ipcRenderer, shell, clipboard } = require('electron');
 
 const elevenLabsKeyEl = document.getElementById('elevenLabsKey');
 const polishEnabledEl = document.getElementById('polishEnabled');
@@ -162,6 +162,35 @@ function updateSttHint() {
     : 'Erkennt am zuverlässigsten und hält sich an dein Glossar. Braucht einen eigenen ElevenLabs-Key; das Freikontingent reicht zum Ausprobieren.';
 }
 sttProviderEl.addEventListener('change', updateSttHint);
+
+// --- Ereignisprotokoll ------------------------------------------------------
+//
+// Bis 0.19.0 meldete die App Fehler nur als kurze Benachrichtigung — nach Sekunden weg.
+// Als am 25.09. ein falscher Text eingefuegt wurde, war die einzige Spur ein zufaellig
+// gemachter Screenshot. Der Kopierknopf existiert, weil das Abtippen einzelner Zeilen
+// bei der Fehlersuche aus der Ferne die groesste Huerde ist.
+const logViewEl = document.getElementById('logView');
+const logTechEl = document.getElementById('logTech');
+
+async function refreshLog() {
+  const lines = await ipcRenderer.invoke('log:read', logTechEl.checked);
+  logViewEl.textContent = lines.length ? lines.join('\n') : '— noch nichts —';
+}
+
+document.getElementById('logRefresh').addEventListener('click', refreshLog);
+logTechEl.addEventListener('change', refreshLog);
+document.getElementById('logCopy').addEventListener('click', async () => {
+  // Technische Zeilen IMMER mitkopieren, auch wenn sie gerade ausgeblendet sind —
+  // wer das Protokoll verschickt, soll das Vollstaendige verschicken.
+  const lines = await ipcRenderer.invoke('log:read', true);
+  const kopf = 'Axionis Dictate ' + (document.getElementById('updVersion').textContent || '?') +
+    ' | Erkennung: ' + sttProviderEl.value;
+  clipboard.writeText(kopf + '\n\n' + lines.join('\n'));
+  const btn = document.getElementById('logCopy');
+  btn.textContent = 'Kopiert';
+  setTimeout(() => { btn.textContent = 'Protokoll kopieren'; }, 1500);
+});
+refreshLog();
 
 // --- Aktualisierung ---------------------------------------------------------
 //
