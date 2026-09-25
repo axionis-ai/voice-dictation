@@ -2,6 +2,10 @@
 
 All notable changes to Axionis Dictate, newest first.
 
+## 0.22.0
+- **Ein gescheitertes Diktat ist nicht mehr verloren.** Im Fehlerbericht `C66FED` steht eine 66-Sekunden-Aufnahme, die an `fetch failed` scheiterte — eine gute Minute gesprochener Text, unwiederbringlich weg. Die App versucht es jetzt bei Netzfehlern automatisch ein zweites Mal, und scheitert auch der, bleibt die Aufnahme erhalten: Im Infobereich der Taskleiste steht dann **„Letztes Diktat (66 s) erneut senden"**.
+- **`fetch failed` sagt jetzt, was wirklich los war.** Node legt diese nichtssagende Hülle um jeden Netzfehler; der eigentliche Grund (Namensauflösung, Zeitablauf, abgerissene Verbindung) steht in `err.cause` und fehlte im Protokoll. Jetzt wird er mitgeschrieben.
+
 ## 0.21.0
 - **Knopf „Fehlerbericht senden"** neben dem Protokoll. Er schickt das Protokoll direkt an uns und zeigt dir eine kurze Kennung, die du durchgeben kannst. Kopieren und Einfügen entfällt — und damit die größte Hürde bei der Fehlersuche aus der Ferne.
 - Mitgesendet werden Version, System, gewählter Erkennungsdienst, Politur-Modell, Pausenlänge und die Zahl der Diktate. **Keine Schlüssel, und niemals diktierter Text** — das Protokoll hält per Bauart nur Zeichenzahlen, Dauern, Anbieternamen und Fehlermeldungen fest.

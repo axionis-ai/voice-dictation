@@ -254,7 +254,17 @@ function updateTray() {
     updateItems.push({ type: 'separator' });
   }
 
+  // Gescheiterte Aufnahme ganz oben anbieten. Ohne diesen Eintrag waere sie nur eine
+  // Zeile im Protokoll — der gesprochene Text bliebe verloren.
+  const wiederholItems = [];
+  if (letzteAufnahme) {
+    const sek = Math.round(letzteAufnahme.recordedMs / 1000);
+    wiederholItems.push({ label: `Letztes Diktat (${sek} s) erneut senden`, click: () => erneutSenden() });
+    wiederholItems.push({ type: 'separator' });
+  }
+
   const menu = Menu.buildFromTemplate([
+    ...wiederholItems,
     ...updateItems,
     { label: stateLabel(), enabled: false },
     { type: 'separator' },
@@ -454,53 +464,130 @@ ipcMain.on('recorder:error', (_e, msg) => {
   setStatus('error', msg);
 });
 
+/**
+ * Packt aus, was Node hinter "fetch failed" versteckt.
+ *
+ * undici wirft bei jedem Netzproblem dieselbe nichtssagende Meldung; der eigentliche
+ * Grund (DNS, Zeitablauf, abgerissene Verbindung, Zertifikat) steht in err.cause. Genau
+ * das fehlte im Fehlerbericht vom 25.09.2026: Dort stand nur "FEHLER: fetch failed",
+ * und damit liess sich der Absturz nicht einordnen.
+ */
+function beschreibeFehler(err) {
+  if (!err) return 'unbekannter Fehler';
+  const teile = [err.message || String(err)];
+  let c = err.cause;
+  let tiefe = 0;
+  while (c && tiefe < 3) {
+    const text = c.code ? `${c.code}${c.message ? ': ' + c.message : ''}` : (c.message || String(c));
+    if (text && !teile.includes(text)) teile.push(text);
+    c = c.cause;
+    tiefe++;
+  }
+  return teile.join(' — ');
+}
+
+/** Sieht der Fehler nach Netz aus? Dann lohnt ein zweiter Versuch. */
+function lohntWiederholung(err) {
+  const t = beschreibeFehler(err).toLowerCase();
+  if (t.includes('401') || t.includes('403')) return false;
+  return t.includes('fetch failed') || t.includes('timeout') || t.includes('abort')
+    || t.includes('econn') || t.includes('enotfound') || t.includes('etimedout')
+    || t.includes('socket') || t.includes('network')
+    || t.includes('http 5') || t.includes('http 429');
+}
+
+/**
+ * Letzte Aufnahme, die nicht verarbeitet werden konnte. null = nichts offen.
+ *
+ * Vorher wurde eine gescheiterte Aufnahme einfach verworfen. Im Bericht vom 25.09. steht
+ * eine 66-Sekunden-Aufnahme, die an "fetch failed" scheiterte — eine gute Minute
+ * gesprochener Text, unwiederbringlich weg. Die Android-Fassung haelt sie seit 0.22.0
+ * fest; hier fehlte das.
+ */
+let letzteAufnahme = null;
+
 ipcMain.on('recorder:recording', async (_e, arrayBuffer, meta) => {
   console.log(`[vd] recorder:recording eingangen bytes=${arrayBuffer && arrayBuffer.byteLength} meta=${JSON.stringify(meta)}`);
   // Aufnahmedauer fuer die Ersparnis-Anzeige: Hotkey-Druck bis zum Eintreffen der Audio-
   // Daten. Hier festhalten, BEVOR Transkription/Politur laufen — danach waere die Spanne
   // um deren Verarbeitungszeit zu gross.
   const recordedMs = recordingStartedAt ? Date.now() - recordingStartedAt : 0;
+  verarbeiteAufnahme(Buffer.from(arrayBuffer), meta, recordedMs, false);
+});
+
+/** Schickt die zuletzt gescheiterte Aufnahme noch einmal durch. */
+function erneutSenden() {
+  const a = letzteAufnahme;
+  if (!a) return;
+  letzteAufnahme = null;
+  updateTray();
+  eventlog.note('Gesicherte Aufnahme wird erneut gesendet');
+  verarbeiteAufnahme(a.buf, a.meta, a.recordedMs, true);
+}
+
+/**
+ * Die eigentliche Verarbeitung. Getrennt vom Empfang, damit dieselbe Aufnahme ein
+ * zweites Mal durchlaufen kann, ohne dass neu gesprochen werden muss.
+ */
+async function verarbeiteAufnahme(buf, meta, recordedMs, istWiederholung) {
   setStatus('transcribing');
-  eventlog.trace(`Aufnahme fertig: ${Math.round(recordedMs / 1000)} s, ${arrayBuffer ? arrayBuffer.byteLength : 0} Bytes`);
+  eventlog.trace(`Aufnahme ${istWiederholung ? 'erneut gesendet' : 'fertig'}: ${Math.round(recordedMs / 1000)} s, ${buf.length} Bytes`);
   try {
-    const buf = Buffer.from(arrayBuffer);
-    console.log(`[vd] buffer laenge=${buf.length}`);
     const anbieter = settings.getSettings().sttProvider === 'groq' ? 'Groq' : 'ElevenLabs';
-    const scribed = await scribe.transcribe(buf, { ext: meta.ext, mime: meta.mime });
+
+    let scribed;
+    try {
+      scribed = await scribe.transcribe(buf, { ext: meta.ext, mime: meta.mime });
+    } catch (e1) {
+      // Ein automatischer zweiter Versuch. Die haeufigste Ursache fuer einen
+      // Fehlschlag ist ein kurzer Netzaussetzer; den merkt man sonst nur daran, dass
+      // das Diktat verschwindet.
+      if (!lohntWiederholung(e1)) throw e1;
+      eventlog.note(`Verbindungsproblem, zweiter Versuch: ${beschreibeFehler(e1)}`);
+      await new Promise((r) => setTimeout(r, 1500));
+      scribed = await scribe.transcribe(buf, { ext: meta.ext, mime: meta.mime });
+    }
+
     let text = scribed.text;
     const languageCode = scribed.languageCode;
-    console.log(`[vd] scribe rohtext laenge=${text.length} sprache=${languageCode || '?'} inhalt=${JSON.stringify(text.slice(0, 120))}`);
+    console.log(`[vd] scribe rohtext laenge=${text.length} sprache=${languageCode || '?'}`);
     eventlog.note(`Erkannt über ${anbieter}: ${text.length} Zeichen, Sprache ${languageCode || 'unbekannt'}`);
     text = clean.cleanTranscript(text); // regelbasiert (kostenlos, instant)
-    console.log(`[vd] clean laenge=${text.length}`);
+
     if (settings.getSettings().llmPolishEnabled) {
       setStatus('polishing');
       try {
         text = await polish.polish(text, { timeoutMs: 8000, languageCode });
-        console.log(`[vd] polish laenge=${text.length}`);
         eventlog.trace(`Politur angewendet (${languageCode || '?'})`);
       } catch (e) {
-        // Politur fehlgeschlagen/Timeout -> regelbasiert bereinigter Text bleibt, Paste nicht blockieren.
+        // Politur fehlgeschlagen/Timeout -> regelbasiert bereinigter Text bleibt, Paste
+        // nicht blockieren. Sichtbar machen statt still den Rohtext nehmen: Sonst sieht
+        // es aus, als poliere die App "mal so, mal so".
         setStatus('transcribing');
         console.error('[vd] Politur-Fallback:', e.message);
-        // Sichtbar machen statt still den Rohtext nehmen: Sonst sieht es aus, als
-        // poliere die App "mal so, mal so".
         eventlog.note(`Politur fehlgeschlagen, unbereinigter Text eingefügt: ${e.message}`);
       }
     }
+
     text = voiceCommands.applyCommands(text);
-    console.log(`[vd] voiceCommands laenge=${text.length} inhalt=${JSON.stringify(text.slice(0, 120))}`);
     await inserter.insert(text);
-    console.log(`[vd] insert fertig`);
     eventlog.note(`Eingefügt: ${text.length} Zeichen`);
     settings.addDictation({ chars: text.length, recordedMs });
+    letzteAufnahme = null;
+    updateTray();
     flashSuccess();
   } catch (err) {
     console.error('[vd] PIPELINE-FEHLER:', err && err.stack ? err.stack : err);
-    eventlog.note(`FEHLER: ${err.message}`);
-    setStatus('error', err.message);
+    const grund = beschreibeFehler(err);
+    eventlog.note(`FEHLER: ${grund}`);
+    // Aufnahme BEHALTEN. Sie ist gesprochene Arbeit und hat bei der Erkennung Geld
+    // gekostet; sie wegzuwerfen, weil das Netz kurz weg war, ist der eigentliche Aerger.
+    letzteAufnahme = { buf, meta, recordedMs, zeit: Date.now() };
+    updateTray();
+    setStatus('error', grund);
   }
-});
+}
+
 
 // --- Settings-IPC ---
 ipcMain.handle('settings:load', () => {
