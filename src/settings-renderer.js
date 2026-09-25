@@ -272,7 +272,7 @@ ipcRenderer.invoke('settings:load').then((s) => {
   polishEnabledEl.checked = !!s.llmPolishEnabled;
   llmApiKeyEl.placeholder = s.hasLlmApiKey ? '•••• gespeichert — zum Ändern neu eingeben' : 'gsk_...';
   // Nur zeigen, was wirklich abweicht — sonst sieht die Voreinstellung aus wie eine Wahl.
-  llmModelEl.value = s.llmModel && s.llmModel !== 'openai/gpt-oss-20b' ? s.llmModel : '';
+  llmModelEl.value = s.llmModel && s.llmModel !== 'openai/gpt-oss-120b' ? s.llmModel : '';
   sttProviderEl.value = s.sttProvider || 'elevenlabs';
   updateSttHint();
   document.getElementById('updVersion').textContent = s.appVersion || '–';

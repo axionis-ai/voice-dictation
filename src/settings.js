@@ -8,7 +8,7 @@ const path = require('path');
 const { app, safeStorage } = require('electron');
 
 const DEFAULT_LLM_BASE_URL = 'https://api.groq.com/openai/v1';
-const DEFAULT_LLM_MODEL = 'openai/gpt-oss-20b';
+const DEFAULT_LLM_MODEL = 'openai/gpt-oss-120b';
 const DEFAULT_SILENCE_MS = 1800;
 const DEFAULT_HOTKEY = 'Super+Y';
 const DEFAULT_MAX_RECORD_MS = 30 * 60 * 1000; // 30 Minuten

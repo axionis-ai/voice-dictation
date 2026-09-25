@@ -2,6 +2,12 @@
 
 All notable changes to Axionis Dictate, newest first.
 
+## 0.23.0
+- **Die Politur ließ jedes fünfte Diktat aus.** Gemessen an echter Nutzung: In 50 Diktaten kam 10-mal eine leere Antwort von Groq zurück, der Text wurde dann unbereinigt eingefügt. Ursache: `max_completion_tokens` steht voreingestellt auf 1024, und die **Reasoning-Tokens zählen mit**. gpt-oss denkt vor der Antwort nach; verbraucht es dabei das Budget, kommt eine leere Antwort. Wir haben den Wert nie gesetzt.
+- Jetzt `reasoning_effort: low`, `include_reasoning: false` und `max_completion_tokens: 2048`.
+- **Standardmodell ist jetzt `openai/gpt-oss-120b`.** Groq hat zum 16.08.2026 alle reinen Instruct-Modelle für Free- und Developer-Tarife abgeschaltet; es bleiben nur Modelle mit interner Überlegung. Unter denen ist 120b im Deutschen deutlich besser (Model Card, MMMLU Deutsch: 78,6 gegen 71,4 bei genau der Einstellung "low"). Kosten rund 0,0002 $ pro Diktat.
+- Bei einer leeren Antwort steht jetzt der **Abbruchgrund** im Protokoll — "length" hieße Token-Budget, "stop" hieße, das Modell sah nichts zu tun.
+
 ## 0.22.0
 - **Ein gescheitertes Diktat ist nicht mehr verloren.** Im Fehlerbericht `C66FED` steht eine 66-Sekunden-Aufnahme, die an `fetch failed` scheiterte — eine gute Minute gesprochener Text, unwiederbringlich weg. Die App versucht es jetzt bei Netzfehlern automatisch ein zweites Mal, und scheitert auch der, bleibt die Aufnahme erhalten: Im Infobereich der Taskleiste steht dann **„Letztes Diktat (66 s) erneut senden"**.
 - **`fetch failed` sagt jetzt, was wirklich los war.** Node legt diese nichtssagende Hülle um jeden Netzfehler; der eigentliche Grund (Namensauflösung, Zeitablauf, abgerissene Verbindung) steht in `err.cause` und fehlte im Protokoll. Jetzt wird er mitgeschrieben.
